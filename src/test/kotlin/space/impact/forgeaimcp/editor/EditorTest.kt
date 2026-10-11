@@ -81,6 +81,11 @@ class EditorTest {
         assertNotEquals(IconPixels.cacheNamespace(profile, 1), IconPixels.cacheNamespace(profile, 2))
         assertEquals(IconPixels.cacheNamespace(profile), IconPixels.cacheNamespace(JsonParser().parse(profile.toString()).asJsonObject))
         assertFalse(profile.has("iconRendererVersion"))
+        val handler = JsonParser().parse("""{"handler":"same.handler.Class","overlay":"map-one"}""").asJsonObject
+        val other = JsonParser().parse(handler.toString()).asJsonObject.apply { addProperty("overlay", "map-two") }
+        assertNotEquals(IconPixels.key(handler), IconPixels.key(other))
+        handler.addProperty("item", "minecraft:stone")
+        try { IconPixels.key(handler); fail("Ambiguous icon target must be rejected") } catch (_: IllegalArgumentException) { }
     }
 
     @Test fun httpServesBundledEditorAndRoutesDraftsWithMutationProtection() {
@@ -107,6 +112,8 @@ class EditorTest {
             assertTrue(server.start());assertFalse(server.start())
             val page=request("/");assertEquals(200,page.first);assertTrue(page.second.contains("RECIPE STUDIO"))
             assertEquals(200,request("/app.js").first)
+            assertEquals(200,request("/board.js").first)
+            assertEquals(200,request("/graph.js").first)
             assertEquals(200,request("/api/icon?item=minecraft%3Astone&v=${IconPixels.RENDER_VERSION}").first)
             assertEquals(400,request("/api/icon?item=minecraft%3Astone&v=1").first)
             assertEquals(400,request("/api/drafts",draft().toString(),header=false).first)
@@ -119,6 +126,8 @@ class EditorTest {
             assertEquals(1,JsonParser().parse(request("/api/drafts").second).asJsonObject.getAsJsonArray("results").size())
             assertEquals(200,request("/api/query","""{"tool":"search_items","arguments":{"query":"iron"}}""").first)
             assertEquals(1,queries)
+            assertEquals(200,request("/api/query","""{"tool":"get_recipes","arguments":{"item":"minecraft:stone"}}""").first)
+            assertEquals(2,queries)
             assertEquals(200,request("/api/export","{}").first);assertEquals(1,exports)
             assertEquals(404,request("/does-not-exist").first)
         } finally {server.stop()}

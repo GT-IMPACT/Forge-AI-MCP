@@ -27,6 +27,8 @@ object McpInstallation {
             "skills/gt-impact-recipes/references/authoring.md" to "/assets/forgeaimcp/mcp/skills/gt-impact-recipes/references/authoring.md",
             "editor/index.html" to "/assets/forgeaimcp/editor/index.html",
             "editor/app.js" to "/assets/forgeaimcp/editor/app.js",
+            "editor/board.js" to "/assets/forgeaimcp/editor/board.js",
+            "editor/graph.js" to "/assets/forgeaimcp/editor/graph.js",
             "editor/style.css" to "/assets/forgeaimcp/editor/style.css",
         )
         for ((relative, path) in managed) {

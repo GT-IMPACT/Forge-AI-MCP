@@ -1,3 +1,5 @@
+import { createRecipeBoard } from "./board.js";
+
 const $ = (id) => document.getElementById(id);
 const clone = (data) => JSON.parse(JSON.stringify(data));
 const emptyDraft = () => ({
@@ -66,6 +68,23 @@ async function api(path, body) {
   return data;
 }
 const query = (tool, args = {}) => api("/api/query", { tool, arguments: args });
+const board = createRecipeBoard({ query, el, icon, itemName, dialog, toast });
+function showView(view) {
+  const active = view === "board";
+  document.querySelector(".workspace").hidden = active;
+  $("recipe-board").hidden = !active;
+  for (const [id, selected] of [
+    ["show-editor", !active],
+    ["show-board", active],
+  ]) {
+    $(id).className = "button " + (selected ? "primary" : "quiet");
+    $(id).setAttribute("aria-pressed", String(selected));
+  }
+  for (const id of ["new-draft", "saved-drafts", "save"]) $(id).hidden = active;
+  if (active) board.open();
+}
+$("show-editor").onclick = () => showView("editor");
+$("show-board").onclick = () => showView("board");
 function toast(message, error = false) {
   clearTimeout(toastTimer);
   $("toast").textContent = message;
@@ -716,6 +735,21 @@ async function catalogDetails(item) {
       "Добавить в рецепт",
     ),
   );
+  if (item.item || item.fluid)
+    actions.append(
+      el(
+        "button",
+        {
+          class: "button",
+          onclick: () => {
+            $("dialog").close();
+            showView("board");
+            board.select(item);
+          },
+        },
+        "Показать цепочку",
+      ),
+    );
   if (item.item)
     actions.append(
       el(

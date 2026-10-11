@@ -20,6 +20,12 @@
         <span class="dot"></span>Подключение к игре…
       </div>
       <div class="top-actions">
+        <button id="show-editor" class="button primary" aria-pressed="true">
+          Редактор
+        </button>
+        <button id="show-board" class="button quiet" aria-pressed="false">
+          Схемы
+        </button>
         <button id="new-draft" class="button quiet">＋ Новый рецепт</button
         ><button id="saved-drafts" class="button quiet">Черновики</button
         ><button id="save" class="button primary">Сохранить черновик</button>
@@ -274,6 +280,77 @@
         </div>
       </aside>
     </main>
+    <section
+      id="recipe-board"
+      class="recipe-board"
+      hidden
+      aria-label="Схема рецептов"
+    >
+      <div class="board-toolbar">
+        <div>
+          <span class="eyebrow">РЕЦЕПТЫ ИЗ ИГРЫ</span>
+          <h2 id="board-title">Схема получения</h2>
+        </div>
+        <button id="board-pick" class="button primary">Выбрать предмет</button>
+        <label
+          >Глубина
+          <select id="board-depth">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+          </select></label
+        >
+        <button id="board-expand-levels" class="button">
+          Раскрыть цепочку
+        </button>
+        <button id="board-fit" class="button quiet">Вместить</button>
+        <button
+          id="board-zoom-out"
+          class="button quiet"
+          aria-label="Уменьшить схему"
+        >
+          −
+        </button>
+        <span id="board-zoom">100%</span>
+        <button
+          id="board-zoom-in"
+          class="button quiet"
+          aria-label="Увеличить схему"
+        >
+          ＋
+        </button>
+        <button id="board-export" class="button quiet">Экспорт схемы</button>
+        <button id="board-import" class="button quiet">Импорт схемы</button>
+        <input
+          id="board-file"
+          type="file"
+          accept="application/json,.json"
+          hidden
+        />
+      </div>
+      <p class="board-help">
+        Предмет → рецепт / машина → результат. Ветви — альтернативные способы.
+        Тащите карточки за заголовок, фон — для перемещения, колесо — для
+        масштаба.
+      </p>
+      <div id="board-status" class="board-status" role="status">
+        Выберите предмет из игры. Раскладка сохраняется в этом браузере.
+      </div>
+      <div
+        id="board-viewport"
+        class="board-viewport"
+        tabindex="0"
+        aria-label="Доска зависимостей"
+      >
+        <div id="board-world" class="board-world">
+          <svg id="board-edges" class="board-edges" aria-hidden="true"></svg>
+          <div id="board-nodes"></div>
+        </div>
+        <div id="board-empty" class="board-empty">
+          Выберите предмет, чтобы увидеть рецепты и цепочки его получения.
+        </div>
+      </div>
+    </section>
     <div id="toast" class="toast" role="status" hidden></div>
     <dialog id="dialog">
       <div class="dialog-head">

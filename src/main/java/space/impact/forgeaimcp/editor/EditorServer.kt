@@ -44,7 +44,7 @@ class EditorServer(
                 require(origin == null || origin == address()) { "Invalid Origin" }
             } else require(request.requestMethod == "GET") { "Method not supported" }
             when {
-                request.requestMethod == "GET" && path in listOf("/", "/index.html", "/app.js", "/style.css") -> {
+                request.requestMethod == "GET" && path in listOf("/", "/index.html", "/app.js", "/board.js", "/graph.js", "/style.css") -> {
                     val filename = if (path == "/") "index.html" else path.substring(1)
                     val resource = javaClass.getResourceAsStream("/assets/forgeaimcp/editor/$filename") ?: error("Missing bundled editor: $filename")
                     val mime = when (filename.substringAfterLast('.')) { "js" -> "text/javascript"; "css" -> "text/css"; else -> "text/html" }
@@ -68,7 +68,7 @@ class EditorServer(
                         val parts = pair.split('=', limit = 2)
                         val key = URLDecoder.decode(parts[0], "UTF-8")
                         val value = URLDecoder.decode(parts.getOrElse(1) { "" }, "UTF-8")
-                        require(key in listOf("item", "metadata", "nbt", "v")) { "Invalid icon argument" }
+                        require(key in listOf("item", "metadata", "nbt", "handler", "overlay", "v")) { "Invalid icon argument" }
                         if (key == "v") { require(value == IconPixels.RENDER_VERSION.toString()) { "Unsupported icon renderer version" }; return@forEach }
                         if (key == "metadata") args.addProperty(key, value.toInt()) else args.addProperty(key, value)
                     }
@@ -101,6 +101,6 @@ class EditorServer(
         request.responseBody.use { it.write(value) }
     }
     companion object {
-        val READ_TOOLS = setOf("get_status", "list_adapters", "list_recipe_maps", "search_items", "get_item", "search_fluids", "search_oredict", "get_oredict", "search_machine_recipes", "get_machine_recipe", "get_recipe_authoring_guide")
+        val READ_TOOLS = setOf("get_status", "list_adapters", "list_recipe_maps", "search_items", "get_item", "search_fluids", "search_oredict", "get_oredict", "get_recipes", "get_usages", "search_machine_recipes", "get_machine_recipe", "get_recipe_authoring_guide")
     }
 }

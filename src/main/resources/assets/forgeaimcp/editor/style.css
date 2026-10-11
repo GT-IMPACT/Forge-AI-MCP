@@ -1041,3 +1041,218 @@ dialog::backdrop {
     display: none;
   }
 }
+.recipe-board {
+  padding: 18px 24px;
+}
+.board-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.board-toolbar h2 {
+  margin: 2px 12px 0 0;
+  font-size: 20px;
+}
+.board-toolbar label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.board-toolbar select {
+  width: 48px;
+}
+.board-help,
+.board-status {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.board-status {
+  min-height: 24px;
+  overflow-wrap: anywhere;
+}
+.board-viewport {
+  position: relative;
+  height: calc(100vh - 245px);
+  min-height: 420px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background-color: var(--canvas);
+  background-image: radial-gradient(#818d9380 1px, transparent 1px);
+  background-size: 22px 22px;
+  touch-action: none;
+  cursor: grab;
+}
+.board-world {
+  position: absolute;
+  inset: 0;
+  transform-origin: 0 0;
+}
+.board-edges {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1px;
+  height: 1px;
+  overflow: visible;
+  pointer-events: none;
+}
+.board-edges marker path {
+  fill: var(--accent);
+}
+.board-link {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+.board-link.is-cycle {
+  stroke: var(--warm);
+  stroke-dasharray: 6 4;
+}
+.board-link-label {
+  fill: var(--text);
+  font-size: 10px;
+  text-anchor: middle;
+  paint-order: stroke;
+  stroke: var(--canvas);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+.board-node {
+  position: absolute;
+  width: 300px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
+  box-shadow: 0 3px 9px #202c3220;
+  cursor: default;
+}
+.board-node.resource {
+  width: 220px;
+}
+.board-node.is-root {
+  border: 2px solid var(--accent);
+  background: var(--hover);
+}
+.board-node-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: grab;
+  user-select: none;
+}
+.board-node-header > div {
+  min-width: 0;
+}
+.board-node-header strong {
+  display: block;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.board-node small {
+  display: block;
+  font-size: 10px;
+  color: var(--muted);
+  margin: 4px 0;
+  overflow-wrap: anywhere;
+}
+.board-node.resource > button {
+  margin-top: 8px;
+  font-size: 11px;
+  padding: 6px;
+}
+.board-node .board-nbt {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.board-recipe-stats {
+  border-top: 1px solid var(--line);
+  margin-top: 8px;
+  padding-top: 7px;
+  font-size: 11px;
+}
+.board-recipe-io {
+  max-height: 240px;
+  overflow-y: auto;
+  margin-top: 8px;
+}
+.board-stack-line {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 3px 0;
+  font-size: 10px;
+}
+.board-stack-line > span:not(.icon-fallback) {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.board-stack-line .item-icon,
+.board-stack-line .icon-fallback {
+  width: 25px;
+  height: 25px;
+  padding: 1px;
+}
+.board-quantity {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.board-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 30px;
+  color: var(--muted);
+  pointer-events: none;
+}
+.board-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin: 5px 0;
+  padding: 7px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  text-align: left;
+}
+.board-picker-row > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.board-picker-row small {
+  color: var(--muted);
+  font-size: 10px;
+  margin-left: auto;
+  overflow-wrap: anywhere;
+}
+.board-picker-results {
+  max-height: 50vh;
+  overflow-y: auto;
+  margin-top: 10px;
+}
+.board-picker-row:hover {
+  background: var(--hover);
+  border-color: var(--accent);
+}
+@media (max-width: 700px) {
+  .recipe-board {
+    padding: 12px;
+  }
+  .board-viewport {
+    height: 65vh;
+  }
+  .board-picker-row {
+    flex-wrap: wrap;
+  }
+  .board-picker-row small {
+    width: 100%;
+    margin-left: 50px;
+  }
+}
