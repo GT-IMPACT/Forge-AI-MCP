@@ -7,9 +7,11 @@ import cpw.mods.fml.common.Loader
 import space.impact.forgeaimcp.adapter.gtimpact.GtImpactAdapter
 import space.impact.forgeaimcp.adapter.minecraft.VanillaAdapter
 import space.impact.forgeaimcp.mcp.GameData
+import space.impact.forgeaimcp.mcp.NeiPresentation
 
 /** Addon mods register providers during init; each fork gets a distinct adapter ID. */
-class AdapterRegistry(private val environment: ModEnvironment, private val codec: RecipeValueCodec) {
+class AdapterRegistry(private val environment: ModEnvironment, private val codec: RecipeValueCodec,
+    private val presentation: ((String, JsonObject) -> JsonObject?)? = null) {
     private val providers = linkedMapOf<String, RecipeAdapter>()
 
     fun register(adapter: RecipeAdapter) {
@@ -39,6 +41,11 @@ class AdapterRegistry(private val environment: ModEnvironment, private val codec
         val detection = detection(provider)
         check(detection.available || operation == "get_recipe_authoring_guide") { "$id unavailable: ${detection.reason}" }
         return provider.call(operation, arguments, environment, codec).apply {
+            if (operation == "list_recipe_maps" && presentation != null) getAsJsonArray("results").forEach { value ->
+                val map = value.asJsonObject
+                try { presentation.invoke(id, map)?.let { map.add("presentation", it) } }
+                catch (e: Exception) { map.addProperty("presentationWarning", e.message) }
+            }
             if (id == "minecraft") add("registration", craftingRegistration())
             if (operation == "get_recipe_authoring_guide") {
                 addProperty("runtimeAvailable", detection.available)
@@ -78,6 +85,6 @@ object RuntimeModEnvironment : ModEnvironment {
 }
 
 object RecipeAdapters {
-    val registry = AdapterRegistry(RuntimeModEnvironment, GameData).apply { register(GtImpactAdapter()); register(VanillaAdapter()) }
+    val registry = AdapterRegistry(RuntimeModEnvironment, GameData, NeiPresentation::map).apply { register(GtImpactAdapter()); register(VanillaAdapter()) }
     @JvmStatic fun register(adapter: RecipeAdapter) = registry.register(adapter)
 }

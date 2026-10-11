@@ -18,6 +18,7 @@ import org.lwjgl.opengl.GL11
 import org.lwjgl.opengl.GL12
 import space.impact.forgeaimcp.adapter.JsonSupport
 import space.impact.forgeaimcp.mcp.GameData
+import space.impact.forgeaimcp.mcp.NeiPresentation
 import java.awt.image.BufferedImage
 import java.io.File
 import java.nio.ByteBuffer
@@ -46,8 +47,14 @@ object IconPixels {
         }
     }
     fun key(args: JsonObject): String = JsonSupport.hash(JsonObject().apply {
-        addProperty("item", JsonSupport.text(args, "item")); addProperty("metadata", JsonSupport.int(args, "metadata"))
-        add("nbt", args.get("nbt") ?: JsonNull.INSTANCE)
+        if (args.has("handler")) {
+            require(!args.has("item")) { "Choose an item or a handler icon" }
+            addProperty("handler", JsonSupport.text(args, "handler"))
+            addProperty("overlay", JsonSupport.text(args, "overlay", ""))
+        } else {
+            addProperty("item", JsonSupport.text(args, "item")); addProperty("metadata", JsonSupport.int(args, "metadata"))
+            add("nbt", args.get("nbt") ?: JsonNull.INSTANCE)
+        }
     })
 }
 
@@ -121,7 +128,8 @@ object ItemIcons {
         while (processed < 8 && System.nanoTime() < deadline) {
             val request = pending.poll()
             if (request != null) {
-                try { request.result.complete(writeIcon(request.key, GameData.resolveItem(request.args))) }
+                try { request.result.complete(if (request.args.has("handler")) writeRendered(request.key) { render(handler = request.args) }
+                    else writeIcon(request.key, GameData.resolveItem(request.args))) }
                 catch (e: Exception) { request.result.completeExceptionally(e) }
                 finally { requests.remove(request.key, request.result) }
             } else if (exportActive && cursor < exportItems.size) {
@@ -166,10 +174,11 @@ object ItemIcons {
             File(root, "status.json").writeText(export(false).toString(), Charsets.UTF_8)
         } catch (e: Exception) { failures++; lastError = e.message }
     }
-    private fun writeIcon(key: String, stack: ItemStack): File {
+    private fun writeIcon(key: String, stack: ItemStack): File = writeRendered(key) { render(stack.copy().apply { stackSize = 1 }) }
+    private fun writeRendered(key: String, draw: () -> BufferedImage): File {
         val target = File(directory ?: error("Editor stopped"), "$key.png")
         if (target.isFile) return target
-        val image = render(stack.copy().apply { stackSize = 1 })
+        val image = draw()
         val temp = java.nio.file.Files.createTempFile(target.parentFile.toPath(), ".icon-", ".tmp")
         try {
             check(ImageIO.write(image, "PNG", temp.toFile())) { "PNG encoder unavailable" }
@@ -177,7 +186,7 @@ object ItemIcons {
         } finally { java.nio.file.Files.deleteIfExists(temp) }
         return target
     }
-    private fun render(stack: ItemStack): BufferedImage {
+    private fun render(stack: ItemStack? = null, handler: JsonObject? = null): BufferedImage {
         check(OpenGlHelper.isFramebufferEnabled()) { "FBO disabled: enable framebuffer objects to render icons" }
         val mc = Minecraft.getMinecraft()
         val savedFramebuffer = GL11.glGetInteger(EXTFramebufferObject.GL_FRAMEBUFFER_BINDING_EXT)
@@ -209,7 +218,14 @@ object ItemIcons {
             GL11.glColor4f(1f, 1f, 1f, 1f)
             RenderHelper.enableGUIStandardItemLighting()
             GuiContainerManager.drawItems.zLevel = 0f
-            GuiContainerManager.drawItem(0, 0, stack, false, "")
+            if (handler == null) GuiContainerManager.drawItem(0, 0, stack!!, false, "")
+            else {
+                val native = NeiPresentation.find(JsonSupport.text(handler, "handler"), JsonSupport.text(handler, "overlay", ""))
+                val image = codechicken.nei.recipe.GuiRecipeTab.getHandlerInfo(native).image ?: error("Handler has no texture icon")
+                GL11.glDisable(GL11.GL_LIGHTING)
+                GL11.glScalef(16f / image.width.coerceAtLeast(1), 16f / image.height.coerceAtLeast(1), 1f)
+                image.draw(0, 0)
+            }
             val pixels = BufferUtils.createByteBuffer(IconPixels.SIZE * IconPixels.SIZE * 4)
             GL11.glPixelStorei(GL11.GL_PACK_ALIGNMENT, 1)
             GL11.glReadPixels(0, 0, IconPixels.SIZE, IconPixels.SIZE, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, pixels)

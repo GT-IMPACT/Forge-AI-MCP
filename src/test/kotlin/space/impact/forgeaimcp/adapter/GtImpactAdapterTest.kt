@@ -204,4 +204,19 @@ class GtImpactAdapterTest {
         assertEquals("another-fork", registry.call("list_recipe_maps", args("""{"adapter":"another-fork"}""")).get("adapter").asString)
         assertTrue(registry.call("list_recipe_maps", args("""{"adapter":"gregtech-impact"}""")).getAsJsonArray("results").size() > 0)
     }
+
+    @Test fun registryKeepsMapIdentityWhenAddingOptionalPresentation() {
+        val registry = AdapterRegistry(Environment(), codec, { adapter, map ->
+            if (map.get("id").asString == "sBlastRecipes") JsonObject().apply {
+                addProperty("name", "Blast Furnace"); addProperty("handler", "$adapter:blast")
+                add("icon", args("""{"kind":"text","text":"Bl"}"""))
+            } else null
+        }).apply { register(GtImpactAdapter()) }
+        val maps = registry.call("list_recipe_maps", args("""{"adapter":"gregtech-impact","limit":100}""")).getAsJsonArray("results")
+        val blast = maps.first { it.asJsonObject.get("id").asString == "sBlastRecipes" }.asJsonObject
+        assertEquals("Blast Furnace", blast.getAsJsonObject("presentation").get("name").asString)
+        assertEquals("Bl", blast.getAsJsonObject("presentation").getAsJsonObject("icon").get("text").asString)
+        assertTrue(maps.any { !it.asJsonObject.has("presentation") })
+        assertTrue(blast.get("javaSymbol").asString.endsWith("sBlastRecipes"))
+    }
 }

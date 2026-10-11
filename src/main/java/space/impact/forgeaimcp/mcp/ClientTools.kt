@@ -137,7 +137,7 @@ object ClientTools {
         } else {
             (GuiCraftingRecipe.craftinghandlers.toList() + GuiCraftingRecipe.serialCraftingHandlers.toList())
         }
-        for (handler in handlers.distinctBy { it.handlerId }) {
+        for (handler in handlers.distinctBy { it.handlerId to it.overlayIdentifier }) {
             if (handlerFilter.isNotEmpty() && handler.handlerId != handlerFilter) continue
             try {
                 val queried = if (usages) {
@@ -153,6 +153,7 @@ object ClientTools {
                                 addProperty("handler", queried.handlerId)
                                 addProperty("category", queried.recipeName)
                                 addProperty("recipeIndex", i)
+                                add("presentation", NeiPresentation.describe(queried))
                                 add("ingredients", slots(queried.getIngredientStacks(i)))
                                 add("result", queried.getResultStack(i)?.let { slot(it) } ?: JsonNull.INSTANCE)
                                 add("otherStacks", slots(queried.getOtherStacks(i)))
