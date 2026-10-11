@@ -21,8 +21,15 @@ object McpInstallation {
         val instructions = McpInstallation::class.java.getResourceAsStream("/assets/forgeaimcp/mcp/README.txt")
             ?: error("В моде отсутствует инструкция подключения.")
         writeIfChanged(File(directory, "README.txt"), instructions.use { it.readBytes() })
-        for (relative in listOf("skills/gt-impact-recipes/SKILL.md", "skills/gt-impact-recipes/references/authoring.md")) {
-            val resource = McpInstallation::class.java.getResourceAsStream("/assets/forgeaimcp/mcp/$relative")
+        val managed = mapOf(
+            "skills/gt-impact-recipes/SKILL.md" to "/assets/forgeaimcp/mcp/skills/gt-impact-recipes/SKILL.md",
+            "skills/gt-impact-recipes/references/authoring.md" to "/assets/forgeaimcp/mcp/skills/gt-impact-recipes/references/authoring.md",
+            "editor/index.html" to "/assets/forgeaimcp/editor/index.html",
+            "editor/app.js" to "/assets/forgeaimcp/editor/app.js",
+            "editor/style.css" to "/assets/forgeaimcp/editor/style.css",
+        )
+        for ((relative, path) in managed) {
+            val resource = McpInstallation::class.java.getResourceAsStream(path)
                 ?: error("В моде отсутствует $relative")
             val target = File(directory, relative)
             Files.createDirectories(target.parentFile.toPath())

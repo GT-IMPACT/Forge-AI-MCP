@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>ForgeMCP · Редактор рецептов</title>
+    <link rel="stylesheet" href="/style.css" />
+    <script type="module" src="/app.js"></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/"
+        ><span class="brand-icon">F</span
+        ><span
+          >FORGE<span class="brand-light">MCP</span
+          ><small>RECIPE STUDIO</small></span
+        ></a
+      >
+      <div id="connection" class="connection">
+        <span class="dot"></span>Подключение к игре…
+      </div>
+      <div class="top-actions">
+        <button id="new-draft" class="button quiet">＋ Новый рецепт</button
+        ><button id="saved-drafts" class="button quiet">Черновики</button
+        ><button id="save" class="button primary">Сохранить черновик</button>
+      </div>
+    </header>
+    <main class="workspace">
+      <aside class="catalog">
+        <div class="panel-heading">
+          <span class="eyebrow">ИЗ ВАШЕЙ СБОРКИ</span>
+          <h2>Каталог</h2>
+          <p>Клик — добавить, перетаскивание — выбрать слот. ПКМ — данные и рецепты.</p>
+        </div>
+        <div class="tabs" role="tablist" aria-label="Каталог">
+          <button data-catalog="items" class="active" role="tab">
+            Предметы</button
+          ><button data-catalog="fluids" role="tab">Жидкости</button
+          ><button data-catalog="ores" role="tab">Ордикты</button>
+        </div>
+        <label class="search-box"
+          ><span>⌕</span
+          ><input
+            id="search"
+            type="search"
+            placeholder="Название или registry ID"
+            aria-label="Поиск по каталогу"
+        /></label>
+        <div class="catalog-toolbar">
+          <span id="catalog-count">Загрузка…</span
+          ><select id="target" aria-label="Куда добавить предмет">
+            <option value="itemInputs">Во входы</option>
+            <option value="itemOutputs">В выходы</option>
+            <option value="specialItems">В спецслот</option>
+            <option value="research">В исследование</option>
+          </select>
+        </div>
+        <div id="catalog-results" class="catalog-results"></div>
+        <div class="pagination">
+          <button
+            id="previous"
+            class="button quiet"
+            aria-label="Предыдущая страница"
+          >
+            ←</button
+          ><span id="catalog-page">1</span
+          ><button
+            id="next"
+            class="button quiet"
+            aria-label="Следующая страница"
+          >
+            →
+          </button>
+        </div>
+        <div class="export-panel">
+          <button id="export-icons" class="button full">
+            ↓ Выгрузить каталог и иконки</button
+          ><progress id="export-progress" max="1" value="0" hidden></progress
+          ><small id="export-status"
+            >PNG и данные сохранятся в папке forgemcp/export.</small
+          >
+        </div>
+      </aside>
+      <section class="editor">
+        <div class="editor-heading">
+          <div>
+            <span class="eyebrow">ВИЗУАЛЬНЫЙ РЕДАКТОР</span
+            ><input
+              id="title"
+              class="recipe-title"
+              value="Новый рецепт"
+              aria-label="Название рецепта"
+            />
+          </div>
+          <span id="draft-state" class="badge">Новый черновик</span>
+        </div>
+        <div class="recipe-toolbar">
+          <label
+            >Адаптер<select id="adapter">
+              <option>Загрузка…</option>
+            </select></label
+          ><label class="map-label"
+            >Машина / карта рецептов<select id="map">
+              <option>Загрузка…</option>
+            </select></label
+          >
+        </div>
+        <div class="canvas">
+          <div class="flow-heading">
+            <span>ИНГРЕДИЕНТЫ</span><span>РЕЗУЛЬТАТ</span>
+          </div>
+          <div class="recipe-flow">
+            <div
+              id="itemInputs"
+              class="slot-group"
+              data-drop="itemInputs"
+            ></div>
+            <div class="flow-arrow">
+              <span>→</span><small id="flow-time">—</small>
+            </div>
+            <div
+              id="itemOutputs"
+              class="slot-group"
+              data-drop="itemOutputs"
+            ></div>
+          </div>
+          <div class="fluids-row">
+            <section>
+              <h3>Входящие жидкости <span>mB</span></h3>
+              <div
+                id="fluidInputs"
+                class="slot-group fluid-group"
+                data-drop="fluidInputs"
+              ></div>
+            </section>
+            <section>
+              <h3>Исходящие жидкости <span>mB</span></h3>
+              <div
+                id="fluidOutputs"
+                class="slot-group fluid-group"
+                data-drop="fluidOutputs"
+              ></div>
+            </section>
+          </div>
+          <section class="special-section">
+            <h3>Специальный слот <span>Отдельно от обычных входов</span></h3>
+            <div
+              id="specialItems"
+              class="slot-group"
+              data-drop="specialItems"
+            ></div>
+          </section>
+          <section id="research-section" class="special-section" hidden>
+            <h3>Исследование Assembly Line</h3>
+            <div
+              id="research-slot"
+              class="slot-group"
+              data-drop="research"
+            ></div>
+            <label class="research-time"
+              >Время исследования, тики<input
+                id="research-time"
+                type="number"
+                min="0"
+                value="0"
+            /></label>
+          </section>
+        </div>
+        <div class="editor-bottom">
+          <div class="editor-help">
+            <span class="help-icon">i</span
+            ><span
+              >Это описание рецепта. ИИ прочитает черновик через MCP и
+              самостоятельно напишет Kotlin-код.</span
+            >
+          </div>
+          <div class="bottom-actions">
+            <button id="download" class="button quiet">Экспорт JSON</button
+            ><button id="import" class="button quiet">Импорт JSON</button
+            ><input
+              id="import-file"
+              type="file"
+              accept=".json,application/json"
+              hidden
+            />
+          </div>
+        </div>
+      </section>
+      <aside class="properties">
+        <div class="panel-heading">
+          <span class="eyebrow">ПАРАМЕТРЫ</span>
+          <h2>Обработка</h2>
+        </div>
+        <label class="field"
+          >Длительность<input
+            id="duration"
+            type="number"
+            min="0"
+            value="200"
+          /><small id="duration-hint">10 секунд · 200 тиков</small></label
+        >
+        <label class="field"
+          >Энергия, EU/t<input
+            id="eut"
+            type="number"
+            min="0"
+            value="30"
+          /><small id="energy-hint">6 000 EU за рецепт</small></label
+        >
+        <label class="field"
+          >Special value<input id="special" type="number" value="0" /><small
+            >Смысл зависит от карты. Например, температура домны или условия
+            обработки.</small
+          ></label
+        >
+        <div class="property-divider"></div>
+        <label class="field"
+          >Заметки для ИИ<textarea
+            id="notes"
+            rows="5"
+            maxlength="8000"
+            placeholder="Что изменить, где зарегистрировать рецепт, дополнительные условия…"
+          ></textarea>
+        </label>
+        <div id="checks" class="checks"></div>
+        <button id="guide" class="button full">
+          API и правила адаптера ↗
+        </button>
+        <div class="ai-card">
+          <span class="eyebrow">СЛЕДУЮЩИЙ ШАГ</span>
+          <p id="ai-instruction">
+            Сохраните черновик и попросите ИИ написать рецепт по его данным.
+          </p>
+          <button id="copy-instruction" class="button full">
+            Скопировать запрос для ИИ
+          </button>
+        </div>
+      </aside>
+    </main>
+    <div id="toast" class="toast" role="status" hidden></div>
+    <dialog id="dialog">
+      <div class="dialog-head">
+        <h2 id="dialog-title"></h2>
+        <button id="dialog-close" class="button quiet" aria-label="Закрыть">
+          ✕
+        </button>
+      </div>
+      <div id="dialog-body"></div>
+    </dialog>
+  </body>
+</html>

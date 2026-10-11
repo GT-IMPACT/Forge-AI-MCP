@@ -51,6 +51,7 @@ class McpInstallationTest {
         val game = temporary.newFolder()
         val directory = McpInstallation.install(game, 25576)
         val jar = File(directory, "forgemcp-stdio.jar")
+        assertTrue(File(directory, "editor/app.js").readText().contains("get_recipe_draft"))
         val original = jar.readBytes()
         assertTrue(jar.setLastModified(1000000000000L))
         val timestamp = jar.lastModified()

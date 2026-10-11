@@ -6,6 +6,7 @@ import cpw.mods.fml.common.eventhandler.SubscribeEvent
 import cpw.mods.fml.common.network.FMLNetworkEvent
 import net.minecraft.client.Minecraft
 import space.impact.forgeaimcp.config.McpConfig
+import space.impact.forgeaimcp.editor.EditorRuntime
 import java.util.concurrent.Callable
 import java.util.concurrent.TimeUnit
 
@@ -36,7 +37,9 @@ object McpRuntime {
 
     @Synchronized
     fun stop(): Boolean {
-        val transport = bridge ?: return false
+        val editorRunning = EditorRuntime.address() != null
+        EditorRuntime.stop()
+        val transport = bridge ?: return editorRunning
         bridge = null
         return transport.stop()
     }

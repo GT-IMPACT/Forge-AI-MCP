@@ -9,10 +9,11 @@ import net.minecraft.event.ClickEvent
 import space.impact.forgeaimcp.config.McpConfig
 import space.impact.forgeaimcp.mcp.McpInstallation
 import space.impact.forgeaimcp.mcp.McpRuntime
+import space.impact.forgeaimcp.editor.EditorRuntime
 
 class ForgeMcpCommand : CommandBase() {
     override fun getCommandName() = "forgemcp"
-    override fun getCommandUsage(sender: ICommandSender) = "/forgemcp <start|stop|status|config>"
+    override fun getCommandUsage(sender: ICommandSender) = "/forgemcp <start|stop|status|config|ui>"
     override fun getRequiredPermissionLevel() = 0
     override fun canCommandSenderUseCommand(sender: ICommandSender) = true
 
@@ -20,6 +21,15 @@ class ForgeMcpCommand : CommandBase() {
         if (args.size != 1) throw WrongUsageException(getCommandUsage(sender))
         val message = try {
             when (args[0]) {
+                "ui" -> {
+                    McpRuntime.start()
+                    val address = EditorRuntime.start()
+                    val link = ChatComponentText("ForgeMCP: открыть редактор рецептов ($address)")
+                    link.chatStyle.chatClickEvent = ClickEvent(ClickEvent.Action.OPEN_URL, address)
+                    link.chatStyle.underlined = true
+                    sender.addChatMessage(link)
+                    "Редактор готов. Черновики доступны ИИ через list_recipe_drafts / get_recipe_draft."
+                }
                 "start" -> if (McpRuntime.start()) "ForgeMCP запущен: ${McpRuntime.address()}. Подключение: /forgemcp config"
                     else "ForgeMCP уже запущен: ${McpRuntime.address()}. Подключение: /forgemcp config"
                 "stop" -> if (McpRuntime.stop()) "ForgeMCP остановлен." else "ForgeMCP уже выключен."
@@ -44,5 +54,5 @@ class ForgeMcpCommand : CommandBase() {
     }
 
     override fun addTabCompletionOptions(sender: ICommandSender, args: Array<String>): List<String>? =
-        if (args.size == 1) getListOfStringsMatchingLastWord(args, "start", "stop", "status", "config") else null
+        if (args.size == 1) getListOfStringsMatchingLastWord(args, "start", "stop", "status", "config", "ui") else null
 }

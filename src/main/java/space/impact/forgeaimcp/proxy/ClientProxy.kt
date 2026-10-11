@@ -12,6 +12,7 @@ import space.impact.forgeaimcp.command.ForgeMcpCommand
 import space.impact.forgeaimcp.config.McpConfig
 import space.impact.forgeaimcp.mcp.McpRuntime
 import space.impact.forgeaimcp.mcp.McpInstallation
+import space.impact.forgeaimcp.editor.ItemIcons
 
 class ClientProxy : CommonProxy() {
 
@@ -28,6 +29,7 @@ class ClientProxy : CommonProxy() {
         super.init(event)
         ClientCommandHandler.instance.registerCommand(ForgeMcpCommand())
         FMLCommonHandler.instance().bus().register(McpRuntime)
+        FMLCommonHandler.instance().bus().register(ItemIcons)
     }
 
     override fun postInit(event: FMLPostInitializationEvent) {
