@@ -15,6 +15,7 @@ import net.minecraft.item.ItemStack
 import org.lwjgl.BufferUtils
 import org.lwjgl.opengl.EXTFramebufferObject
 import org.lwjgl.opengl.GL11
+import org.lwjgl.opengl.GL12
 import space.impact.forgeaimcp.adapter.JsonSupport
 import space.impact.forgeaimcp.mcp.GameData
 import java.awt.image.BufferedImage
@@ -27,6 +28,11 @@ import java.util.concurrent.TimeUnit
 import javax.imageio.ImageIO
 
 object IconPixels {
+    const val RENDER_VERSION = 2
+    fun cacheNamespace(profile: JsonObject, renderVersion: Int = RENDER_VERSION): String =
+        JsonSupport.hash(JsonParser().parse(profile.toString()).asJsonObject.apply {
+            addProperty("iconRendererVersion", renderVersion)
+        }).take(24)
     /** OpenGL is bottom-up RGBA; PNG is top-down ARGB. */
     fun image(bytes: ByteBuffer, size: Int): BufferedImage = BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB).apply {
         for (y in 0 until size) for (x in 0 until size) {
@@ -66,7 +72,8 @@ object ItemIcons {
             add("mods", JsonSupport.strings(Loader.instance().modList.map { "${it.modId}:${it.version}:${it.source?.lastModified()}" }.sorted()))
             add("resourcePacks", JsonSupport.strings(Minecraft.getMinecraft().gameSettings.resourcePacks.map { it.toString() + ":" + File(Minecraft.getMinecraft().mcDataDir, "resourcepacks/$it").lastModified() }))
         }
-        directory = File(exportRoot, "icons/${JsonSupport.hash(profile).take(24)}").apply { mkdirs() }
+        directory = File(exportRoot, "icons/${IconPixels.cacheNamespace(profile)}").apply { mkdirs() }
+        profile.addProperty("iconRendererVersion", IconPixels.RENDER_VERSION)
         File(exportRoot, "profile.json").writeText(profile.toString(), Charsets.UTF_8)
     }
     fun png(args: JsonObject): ByteArray {
@@ -183,11 +190,20 @@ object ItemIcons {
         try {
             OpenGlHelper.setActiveTexture(OpenGlHelper.defaultTexUnit)
             val buffer = frame ?: Framebuffer(32, 32, true).also { frame = it; it.setFramebufferColor(0f, 0f, 0f, 0f) }
+            GL11.glColorMask(true, true, true, true)
+            GL11.glDepthMask(true)
             GL11.glDisable(GL11.GL_SCISSOR_TEST)
             buffer.framebufferClear(); buffer.bindFramebuffer(true)
             GL11.glMatrixMode(GL11.GL_PROJECTION); GL11.glLoadIdentity()
-            GL11.glOrtho(0.0, 16.0, 16.0, 0.0, -1000.0, 1000.0)
+            GL11.glOrtho(0.0, 16.0, 16.0, 0.0, 1000.0, 3000.0)
             GL11.glMatrixMode(GL11.GL_MODELVIEW); GL11.glLoadIdentity()
+            GL11.glTranslatef(0f, 0f, -2000f)
+            // Inventory icons must not inherit world fog/lightmap or unscaled block normals.
+            mc.entityRenderer.disableLightmap(0.0)
+            OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, 240f, 240f)
+            GL11.glDisable(GL11.GL_FOG)
+            GL11.glEnable(GL12.GL_RESCALE_NORMAL)
+            GL11.glDepthFunc(GL11.GL_LEQUAL)
             GL11.glDisable(GL11.GL_SCISSOR_TEST); GL11.glEnable(GL11.GL_TEXTURE_2D)
             GL11.glColor4f(1f, 1f, 1f, 1f)
             RenderHelper.enableGUIStandardItemLighting()

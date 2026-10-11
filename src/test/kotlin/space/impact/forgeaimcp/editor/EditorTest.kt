@@ -74,6 +74,13 @@ class EditorTest {
         assertNotEquals(IconPixels.key(one),IconPixels.key(same))
     }
 
+    @Test fun rendererRevisionInvalidatesDiskCacheWithoutChangingItemIdentity() {
+        val profile = JsonParser().parse("""{"mods":["minecraft:1.7.10"],"resourcePacks":["default"]}""").asJsonObject
+        assertNotEquals(IconPixels.cacheNamespace(profile, 1), IconPixels.cacheNamespace(profile, 2))
+        assertEquals(IconPixels.cacheNamespace(profile), IconPixels.cacheNamespace(JsonParser().parse(profile.toString()).asJsonObject))
+        assertFalse(profile.has("iconRendererVersion"))
+    }
+
     @Test fun httpServesBundledEditorAndRoutesDraftsWithMutationProtection() {
         var queries = 0; var exports = 0
         val server = EditorServer(0,DraftStore(temporary.newFolder()),{tool,args -> queries++; JsonObject().apply { addProperty("tool",tool); add("arguments",args) } },{byteArrayOf(1,2,3)},{start -> if(start) exports++; JsonObject().apply { addProperty("running",start) }})
@@ -98,6 +105,8 @@ class EditorTest {
             assertTrue(server.start());assertFalse(server.start())
             val page=request("/");assertEquals(200,page.first);assertTrue(page.second.contains("RECIPE STUDIO"))
             assertEquals(200,request("/app.js").first)
+            assertEquals(200,request("/api/icon?item=minecraft%3Astone&v=${IconPixels.RENDER_VERSION}").first)
+            assertEquals(400,request("/api/icon?item=minecraft%3Astone&v=1").first)
             assertEquals(400,request("/api/drafts",draft().toString(),header=false).first)
             assertEquals(400,request("/api/drafts",draft().toString(),origin="https://example.com").first)
             assertEquals(400,request("/api/query","""{"tool":"generate_recipe_code"}""").first)

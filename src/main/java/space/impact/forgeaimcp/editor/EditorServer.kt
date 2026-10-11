@@ -68,7 +68,8 @@ class EditorServer(
                         val parts = pair.split('=', limit = 2)
                         val key = URLDecoder.decode(parts[0], "UTF-8")
                         val value = URLDecoder.decode(parts.getOrElse(1) { "" }, "UTF-8")
-                        require(key in listOf("item", "metadata", "nbt")) { "Invalid icon argument" }
+                        require(key in listOf("item", "metadata", "nbt", "v")) { "Invalid icon argument" }
+                        if (key == "v") { require(value == IconPixels.RENDER_VERSION.toString()) { "Unsupported icon renderer version" }; return@forEach }
                         if (key == "metadata") args.addProperty(key, value.toInt()) else args.addProperty(key, value)
                     }
                     respond(request, 200, "image/png", icon(args))
