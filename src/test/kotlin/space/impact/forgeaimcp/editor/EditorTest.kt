@@ -45,6 +45,8 @@ class EditorTest {
         assertEquals(1, input.getAsJsonArray("alternatives").size())
         assertEquals(2500, loaded.getAsJsonArray("itemOutputs")[0].asJsonObject.get("chance").asInt)
         assertEquals(1, store.list().getAsJsonArray("results").size())
+        val summary = store.list().getAsJsonArray("results")[0].asJsonObject
+        for (key in listOf("itemInputs", "itemOutputs", "fluidInputs", "fluidOutputs")) assertEquals(loaded.get(key), summary.get(key))
         loaded.addProperty("title", "Обновлённый контроллер")
         assertEquals(saved.get("id"), store.save(loaded).get("id"))
         assertEquals(1, store.list().getAsJsonArray("results").size())

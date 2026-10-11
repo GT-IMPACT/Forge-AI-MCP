@@ -814,6 +814,66 @@ dialog::backdrop {
     sans-serif;
   color: var(--text);
 }
+.draft-preview {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 24px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0;
+}
+.draft-preview-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+.draft-preview-stack {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-width: 36px;
+  min-height: 36px;
+}
+.draft-preview .item-icon,
+.draft-preview .icon-fallback {
+  width: 36px;
+  height: 36px;
+  padding: 2px;
+}
+.draft-preview-count {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  padding: 0 3px;
+  border-radius: 3px;
+  background: var(--text);
+  color: var(--field);
+  font-size: 10px;
+  line-height: 15px;
+  font-weight: 650;
+}
+.draft-preview-stack.is-fluid {
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 4px 6px;
+  border-radius: 4px;
+  background: var(--icon-surface);
+  max-width: 100%;
+}
+.is-fluid .draft-preview-count {
+  position: static;
+  margin-top: 3px;
+}
+.draft-preview-fluid {
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.draft-preview-arrow,
+.draft-preview-empty {
+  color: var(--muted);
+  text-align: center;
+}
 .catalog-detail-actions {
   display: flex;
   gap: 10px;

@@ -899,6 +899,56 @@ async function saveDraft() {
     $("save").disabled = false;
   }
 }
+function draftPreviewGroup(items, fluids, label) {
+  const stacks = [...(items || []), ...(fluids || [])];
+  return el(
+    "span",
+    { class: "draft-preview-group", "aria-label": label },
+    ...(stacks.length
+      ? stacks.map((stack) => {
+          const amount = stack.fluid
+            ? `${stack.amount} mB`
+            : (stack.count ?? 1);
+          const name = itemName(stack);
+          const representative = stack.item
+            ? stack
+            : stack.alternatives?.find((value) => value.item) || stack;
+          return el(
+            "span",
+            {
+              class: "draft-preview-stack" + (stack.fluid ? " is-fluid" : ""),
+              title: `${name} · ${amount}${stack.chance != null && stack.chance !== 10000 ? ` · шанс ${stack.chance / 100}%` : ""}`,
+              "aria-label": `${name} · ${amount}`,
+            },
+            stack.fluid
+              ? el("span", { class: "draft-preview-fluid", text: name })
+              : icon(representative),
+            ...(amount !== 1
+              ? [
+                  el("span", {
+                    class: "draft-preview-count",
+                    text: String(amount),
+                  }),
+                ]
+              : []),
+          );
+        })
+      : [el("span", { class: "draft-preview-empty", text: "—" })]),
+  );
+}
+function draftPreview(draft) {
+  return el(
+    "span",
+    { class: "draft-preview" },
+    draftPreviewGroup(draft.itemInputs, draft.fluidInputs, "Входы"),
+    el("span", {
+      class: "draft-preview-arrow",
+      text: "→",
+      "aria-hidden": "true",
+    }),
+    draftPreviewGroup(draft.itemOutputs, draft.fluidOutputs, "Выходы"),
+  );
+}
 async function openDrafts() {
   try {
     const data = await api("/api/drafts");
@@ -929,6 +979,7 @@ async function openDrafts() {
               },
               draft.title,
               el("small", {}, `${draft.adapter} · ${draft.map}`),
+              draftPreview(draft),
               el("small", {}, draft.id),
             ),
           )

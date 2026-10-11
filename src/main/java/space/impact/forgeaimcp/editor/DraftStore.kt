@@ -20,7 +20,7 @@ class DraftStore(private val directory: File) {
                 try {
                     val draft = load(entry.nameWithoutExtension)
                     add(JsonObject().apply {
-                        for (key in listOf("id", "title", "adapter", "map", "kind", "updatedAt")) if (draft.has(key)) add(key, draft.get(key))
+                        for (key in listOf("id", "title", "adapter", "map", "kind", "updatedAt", "itemInputs", "itemOutputs", "fluidInputs", "fluidOutputs")) if (draft.has(key)) add(key, draft.get(key))
                     })
                 } catch (_: Exception) { /* An unrelated or damaged file is not an editable draft. */ }
             }
