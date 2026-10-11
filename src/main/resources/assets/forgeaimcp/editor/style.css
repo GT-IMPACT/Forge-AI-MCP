@@ -277,7 +277,7 @@ textarea:focus {
 .item-icon {
   width: 40px;
   height: 40px;
-  image-rendering: pixelated;
+  image-rendering: auto;
   object-fit: contain;
   padding: 4px;
   flex-shrink: 0;

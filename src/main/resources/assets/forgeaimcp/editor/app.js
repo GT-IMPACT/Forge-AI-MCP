@@ -197,7 +197,7 @@ function icon(data) {
   if (data.fluid) return el("span", { class: "icon-fallback", text: "mB" });
   if (!data.item) return el("span", { class: "icon-fallback", text: "OD" });
   const params = new URLSearchParams({
-    v: "2",
+    v: "3",
     item: data.item,
     metadata: String(data.metadata || 0),
   });

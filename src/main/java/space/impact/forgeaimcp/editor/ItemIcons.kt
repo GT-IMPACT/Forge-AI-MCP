@@ -28,7 +28,8 @@ import java.util.concurrent.TimeUnit
 import javax.imageio.ImageIO
 
 object IconPixels {
-    const val RENDER_VERSION = 2
+    const val RENDER_VERSION = 3
+    const val SIZE = 128
     fun cacheNamespace(profile: JsonObject, renderVersion: Int = RENDER_VERSION): String =
         JsonSupport.hash(JsonParser().parse(profile.toString()).asJsonObject.apply {
             addProperty("iconRendererVersion", renderVersion)
@@ -189,7 +190,7 @@ object ItemIcons {
         GL11.glMatrixMode(GL11.GL_MODELVIEW); GL11.glPushMatrix()
         try {
             OpenGlHelper.setActiveTexture(OpenGlHelper.defaultTexUnit)
-            val buffer = frame ?: Framebuffer(32, 32, true).also { frame = it; it.setFramebufferColor(0f, 0f, 0f, 0f) }
+            val buffer = frame ?: Framebuffer(IconPixels.SIZE, IconPixels.SIZE, true).also { frame = it; it.setFramebufferColor(0f, 0f, 0f, 0f) }
             GL11.glColorMask(true, true, true, true)
             GL11.glDepthMask(true)
             GL11.glDisable(GL11.GL_SCISSOR_TEST)
@@ -209,10 +210,10 @@ object ItemIcons {
             RenderHelper.enableGUIStandardItemLighting()
             GuiContainerManager.drawItems.zLevel = 0f
             GuiContainerManager.drawItem(0, 0, stack, false, "")
-            val pixels = BufferUtils.createByteBuffer(32 * 32 * 4)
+            val pixels = BufferUtils.createByteBuffer(IconPixels.SIZE * IconPixels.SIZE * 4)
             GL11.glPixelStorei(GL11.GL_PACK_ALIGNMENT, 1)
-            GL11.glReadPixels(0, 0, 32, 32, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, pixels)
-            return IconPixels.image(pixels, 32)
+            GL11.glReadPixels(0, 0, IconPixels.SIZE, IconPixels.SIZE, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, pixels)
+            return IconPixels.image(pixels, IconPixels.SIZE)
         } finally {
             GuiContainerManager.drawItems.zLevel = oldZ
             OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, brightnessX, brightnessY)
