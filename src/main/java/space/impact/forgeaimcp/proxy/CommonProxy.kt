@@ -8,6 +8,7 @@ import cpw.mods.fml.common.event.FMLServerStartedEvent
 import cpw.mods.fml.common.event.FMLServerStartingEvent
 import cpw.mods.fml.common.event.FMLServerStoppedEvent
 import cpw.mods.fml.common.event.FMLServerStoppingEvent
+import space.impact.forgeaimcp.config.McpConfig
 
 open class CommonProxy {
 
@@ -15,7 +16,9 @@ open class CommonProxy {
 
     open fun init(event: FMLInitializationEvent) = Unit
 
-    open fun preInit(event: FMLPreInitializationEvent) = Unit
+    open fun preInit(event: FMLPreInitializationEvent) {
+        McpConfig.load(event.suggestedConfigurationFile)
+    }
 
     open fun postInit(event: FMLPostInitializationEvent) = Unit
 

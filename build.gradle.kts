@@ -33,6 +33,7 @@ repositories {
 }
 
 dependencies {
+    testImplementation("junit:junit:4.13.2")
     api("space.impact:Forgelin:2.1.1")
     implementation("com.github.GTNewHorizons:NotEnoughItems:2.8.158-GTNH:dev")
 }
