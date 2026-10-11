@@ -709,6 +709,7 @@ export function createRecipeBoard({
           if (node.stack.oreDictionary || node.stack.alternatives?.length > 1)
             continue;
           if (!node.expanded) await expand(node, false);
+          if (current !== generation) return;
           for (const edge of graph.edges.values())
             if (
               edge.to === node.id &&
@@ -800,6 +801,21 @@ export function createRecipeBoard({
       persist();
     });
   $("board-pick").onclick = picker;
+  $("board-clear").onclick = () => {
+    generation++;
+    budgetReached = false;
+    loading.clear();
+    drag = null;
+    graph = new RecipeGraph();
+    view = { x: 650, y: 180, scale: 1 };
+    render();
+    try {
+      localStorage.removeItem(STORAGE);
+      status("Схема очищена. Выберите предмет, чтобы начать новую.");
+    } catch {
+      status("Схема очищена, но сохранение в браузере удалить не удалось.");
+    }
+  };
   $("board-fit").onclick = fit;
   $("board-expand-levels").onclick = expandLevels;
   $("board-zoom-in").onclick = () => zoom(1.2);
