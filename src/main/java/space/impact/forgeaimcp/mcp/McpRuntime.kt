@@ -19,6 +19,7 @@ object McpRuntime {
     @Synchronized
     fun start(): Boolean {
         if (isRunning()) return false
+        McpInstallation.install(Minecraft.getMinecraft().mcDataDir, McpConfig.port)
         check(Loader.isModLoaded("NotEnoughItems")) { "NotEnoughItems is required." }
         val transport = LocalBridge(McpConfig.port) { tool, args ->
             val future = Minecraft.getMinecraft().func_152343_a(Callable { ClientTools.call(tool, args) })
