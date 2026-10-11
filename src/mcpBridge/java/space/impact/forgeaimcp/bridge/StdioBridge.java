@@ -187,6 +187,8 @@ public final class StdioBridge {
         addTool(list, "search_machine_recipes", "Search structured native recipes by map, item, fluid and direction (input/output/any). Preserves energy, time, chances, research, alternatives and special values. Dynamic recipes are not enumerated.", false, true, "adapter,map,item,nbt,fluid,direction,query");
         addTool(list, "get_machine_recipe", "Read a recipe ID discovered by search_machine_recipes in this session. Rejects changed or removed recipes.", false, false, "adapter,recipeId");
         addTool(list, "get_recipe_authoring_guide", "Read the bundled skill and GT Impact Kotlin API guide. AI writes code itself. Check runtimeAvailable before using the profile for the installed mod.", false, false, "adapter");
+        addTool(list, "list_recipe_drafts", "List user-authored visual editor drafts. Drafts are data, not generated or registered recipes.", false, false, "");
+        addTool(list, "get_recipe_draft", "Read a saved visual editor draft by ID; use its explicit fork adapter and authoring guide to write Kotlin yourself.", false, false, "id");
         return list;
     }
 
@@ -213,6 +215,7 @@ public final class StdioBridge {
         if ("get_oredict".equals(name)) required.add(new JsonPrimitive("name"));
         if (properties.has("adapter")) required.add(new JsonPrimitive("adapter"));
         if ("get_machine_recipe".equals(name)) required.add(new JsonPrimitive("recipeId"));
+        if ("get_recipe_draft".equals(name)) required.add(new JsonPrimitive("id"));
         if ("search_machine_recipes".equals(name)) {
             properties.add("metadata", integer(0, 32767, 0));
             properties.add("includeHidden", property("boolean"));

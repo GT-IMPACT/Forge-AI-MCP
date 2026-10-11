@@ -4,11 +4,15 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import org.junit.Assert.*
 import org.junit.Test
+import org.junit.Rule
+import org.junit.rules.TemporaryFolder
+import space.impact.forgeaimcp.editor.DraftStore
 import java.io.File
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.CompletableFuture
 
 class StdioBridgeTest {
+    @get:Rule val temporary = TemporaryFolder()
     private val initialize = """{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{}}}"""
     private val initialized = """{"jsonrpc":"2.0","method":"notifications/initialized"}"""
 
@@ -35,7 +39,7 @@ class StdioBridgeTest {
         assertEquals(2, replies.size)
         assertEquals("2025-06-18", replies[0].getAsJsonObject("result").get("protocolVersion").asString)
         val tools = replies[1].getAsJsonObject("result").getAsJsonArray("tools")
-        assertEquals(13, tools.size())
+        assertEquals(15, tools.size())
         val names = tools.map { it.asJsonObject.get("name").asString }
         assertTrue(names.containsAll(listOf("list_adapters", "search_machine_recipes", "get_recipe_authoring_guide")))
         assertFalse(names.contains("generate_recipe_code"))
@@ -109,6 +113,27 @@ class StdioBridgeTest {
             assertEquals(-32602, replies[2].getAsJsonObject("error").get("code").asInt)
             assertEquals(-32602, replies[3].getAsJsonObject("error").get("code").asInt)
             assertEquals(1, calls)
+        } finally { bridge.stop() }
+    }
+
+    @Test fun stdioReadsPersistedVisualDraftWithoutGeneratingOrApplyingCode() {
+        val store = DraftStore(temporary.newFolder())
+        val saved = store.save(JsonParser().parse("""{"schemaVersion":1,"title":"ME Controller","adapter":"gregtech-impact","map":"sAssemblerRecipes","kind":"machine","durationTicks":600,"eut":1920,"specialValue":0,"itemInputs":[],"itemOutputs":[{"item":"appliedenergistics2:tile.BlockController","metadata":0,"count":1,"chance":10000}],"notes":"ИИ пишет Kotlin самостоятельно"}""").asJsonObject)
+        val id = saved.get("id").asString
+        val bridge = LocalBridge(0) { tool,args ->
+            when(tool) {
+                "list_recipe_drafts" -> store.list()
+                "get_recipe_draft" -> store.load(args.get("id").asString)
+                else -> error("Unexpected tool")
+            }
+        }
+        try {
+            bridge.start()
+            val replies = run(bridge.localPort(),initialize,initialized,
+                """{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"list_recipe_drafts"}}""",
+                """{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"get_recipe_draft","arguments":{"id":"$id"}}}""")
+            assertEquals(id,replies[1].getAsJsonObject("result").getAsJsonObject("structuredContent").getAsJsonArray("results")[0].asJsonObject.get("id").asString)
+            assertEquals(saved,replies[2].getAsJsonObject("result").getAsJsonObject("structuredContent"))
         } finally { bridge.stop() }
     }
 }

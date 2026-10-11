@@ -41,7 +41,7 @@ class McpInstallationTest {
             assertEquals(process.errorStream.bufferedReader().readText(), 0, process.exitValue())
             val replies = output.get(2, TimeUnit.SECONDS)
             assertEquals(2, replies.size)
-            assertEquals(13, JsonParser().parse(replies[1]).asJsonObject.getAsJsonObject("result").getAsJsonArray("tools").size())
+            assertEquals(15, JsonParser().parse(replies[1]).asJsonObject.getAsJsonObject("result").getAsJsonArray("tools").size())
         } finally {
             process.destroyForcibly()
         }

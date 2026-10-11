@@ -18,6 +18,7 @@ import net.minecraftforge.oredict.OreDictionary
 import net.minecraftforge.fluids.FluidRegistry
 import net.minecraftforge.fluids.FluidStack
 import space.impact.forgeaimcp.adapter.RecipeAdapters
+import space.impact.forgeaimcp.editor.RecipeDrafts
 import java.util.Locale
 
 /** Only called on the Minecraft client thread. Never exposes live stacks to the bridge. */
@@ -27,6 +28,8 @@ object ClientTools {
     private var index = emptyList<Entry>()
 
     fun call(tool: String, args: JsonObject): JsonObject {
+        if (tool == "list_recipe_drafts") return RecipeDrafts.store.list()
+        if (tool == "get_recipe_draft") return RecipeDrafts.store.load(text(args, "id"))
         if (tool == "list_adapters") return RecipeAdapters.registry.list()
         if (tool == "get_recipe_authoring_guide") return RecipeAdapters.registry.call(tool, args)
         if (tool == "get_status") return JsonObject().apply {
