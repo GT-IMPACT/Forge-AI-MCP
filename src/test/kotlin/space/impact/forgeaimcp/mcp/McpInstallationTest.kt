@@ -19,6 +19,8 @@ class McpInstallationTest {
         val jar = File(directory, "forgemcp-stdio.jar")
         assertTrue(jar.length() > 0)
         assertTrue(File(directory, "README.txt").readText().contains("/forgemcp start"))
+        assertTrue(File(directory, "skills/gt-impact-recipes/SKILL.md").readText().contains("name: gt-impact-recipes"))
+        assertTrue(File(directory, "skills/gt-impact-recipes/references/authoring.md").readText().contains("Kotlin"))
         val config = JsonParser().parse(File(directory, "mcp.json").readText()).asJsonObject
             .getAsJsonObject("mcpServers").getAsJsonObject("forgemcp")
         assertEquals(jar.absolutePath, config.getAsJsonArray("args")[1].asString)
@@ -39,7 +41,7 @@ class McpInstallationTest {
             assertEquals(process.errorStream.bufferedReader().readText(), 0, process.exitValue())
             val replies = output.get(2, TimeUnit.SECONDS)
             assertEquals(2, replies.size)
-            assertEquals(7, JsonParser().parse(replies[1]).asJsonObject.getAsJsonObject("result").getAsJsonArray("tools").size())
+            assertEquals(13, JsonParser().parse(replies[1]).asJsonObject.getAsJsonObject("result").getAsJsonArray("tools").size())
         } finally {
             process.destroyForcibly()
         }
@@ -56,9 +58,12 @@ class McpInstallationTest {
         McpInstallation.install(game, 25576)
         assertEquals(timestamp, jar.lastModified())
         jar.writeText("broken jar")
+        val skill = File(directory, "skills/gt-impact-recipes/SKILL.md")
+        skill.writeText("broken skill")
         McpInstallation.install(game, 25577)
         assertArrayEquals(original, jar.readBytes())
         assertEquals("keep me", custom.readText())
+        assertTrue(skill.readText().contains("name: gt-impact-recipes"))
         val config = JsonParser().parse(File(directory, "mcp.json").readText()).asJsonObject
             .getAsJsonObject("mcpServers").getAsJsonObject("forgemcp")
         assertEquals("25577", config.getAsJsonArray("args")[3].asString)

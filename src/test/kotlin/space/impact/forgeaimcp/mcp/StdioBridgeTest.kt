@@ -35,7 +35,10 @@ class StdioBridgeTest {
         assertEquals(2, replies.size)
         assertEquals("2025-06-18", replies[0].getAsJsonObject("result").get("protocolVersion").asString)
         val tools = replies[1].getAsJsonObject("result").getAsJsonArray("tools")
-        assertEquals(7, tools.size())
+        assertEquals(13, tools.size())
+        val names = tools.map { it.asJsonObject.get("name").asString }
+        assertTrue(names.containsAll(listOf("list_adapters", "search_machine_recipes", "get_recipe_authoring_guide")))
+        assertFalse(names.contains("generate_recipe_code"))
         tools.forEach { assertTrue(it.asJsonObject.getAsJsonObject("annotations").get("readOnlyHint").asBoolean) }
     }
 
@@ -85,4 +88,27 @@ class StdioBridgeTest {
         } finally { bridge.stop() }
     }
 
+    @Test fun adapterArgumentsAndBooleanFiltersCrossStdioWithSchemaValidation() {
+        var calls = 0
+        val bridge = LocalBridge(0) { tool, args ->
+            check(tool == "search_machine_recipes")
+            check(args.get("adapter").asString == "gregtech-impact")
+            check(args.get("map").asString == "sBlastRecipes")
+            check(args.get("includeHidden").asBoolean)
+            calls++
+            JsonObject().apply { addProperty("adapter", "gregtech-impact"); addProperty("total", 1) }
+        }
+        try {
+            bridge.start()
+            val replies = run(bridge.localPort(), initialize, initialized,
+                """{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"search_machine_recipes","arguments":{"adapter":"gregtech-impact","map":"sBlastRecipes","includeHidden":true}}}""",
+                """{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"search_machine_recipes","arguments":{"adapter":"gregtech-impact","includeHidden":"true"}}}""",
+                """{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"list_recipe_maps","arguments":{}}}""")
+            assertFalse(replies[1].getAsJsonObject("result").get("isError").asBoolean)
+            assertEquals("gregtech-impact", replies[1].getAsJsonObject("result").getAsJsonObject("structuredContent").get("adapter").asString)
+            assertEquals(-32602, replies[2].getAsJsonObject("error").get("code").asInt)
+            assertEquals(-32602, replies[3].getAsJsonObject("error").get("code").asInt)
+            assertEquals(1, calls)
+        } finally { bridge.stop() }
+    }
 }

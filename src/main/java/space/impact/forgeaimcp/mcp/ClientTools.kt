@@ -15,6 +15,9 @@ import net.minecraft.item.ItemStack
 import net.minecraft.nbt.JsonToNBT
 import net.minecraft.nbt.NBTTagCompound
 import net.minecraftforge.oredict.OreDictionary
+import net.minecraftforge.fluids.FluidRegistry
+import net.minecraftforge.fluids.FluidStack
+import space.impact.forgeaimcp.adapter.RecipeAdapters
 import java.util.Locale
 
 /** Only called on the Minecraft client thread. Never exposes live stacks to the bridge. */
@@ -24,6 +27,8 @@ object ClientTools {
     private var index = emptyList<Entry>()
 
     fun call(tool: String, args: JsonObject): JsonObject {
+        if (tool == "list_adapters") return RecipeAdapters.registry.list()
+        if (tool == "get_recipe_authoring_guide") return RecipeAdapters.registry.call(tool, args)
         if (tool == "get_status") return JsonObject().apply {
             addProperty("running", McpRuntime.isRunning())
             addProperty("address", McpRuntime.address())
@@ -33,6 +38,14 @@ object ClientTools {
         }
         check(Minecraft.getMinecraft().theWorld != null) { "Join a world before querying game data." }
         return when (tool) {
+            "list_recipe_maps", "search_machine_recipes", "get_machine_recipe" -> RecipeAdapters.registry.call(tool, args)
+            "search_fluids" -> {
+                val query = text(args, "query", "").lowercase(Locale.ROOT)
+                page(FluidRegistry.getRegisteredFluids().values.sortedBy { it.name }.filter {
+                    it.name.lowercase(Locale.ROOT).contains(query) ||
+                        it.getLocalizedName(FluidStack(it, 1000)).lowercase(Locale.ROOT).contains(query)
+                }, args) { GameData.fluid(FluidStack(it, 1000)) }
+            }
             "search_items" -> searchItems(args)
             "get_item" -> describe(resolve(args), true)
             "search_oredict" -> {

@@ -181,6 +181,12 @@ public final class StdioBridge {
         addTool(list, "get_usages", "NEI recipes using an item as an ingredient.", true, true, "handler");
         addTool(list, "search_oredict", "Search OreDictionary group names.", false, true, "query");
         addTool(list, "get_oredict", "Stacks in an exact OreDictionary group, preserving wildcard metadata.", false, true, "name");
+        addTool(list, "search_fluids", "Search registered fluids. Amount is a 1000 mB preview, not a recipe requirement.", false, true, "query");
+        addTool(list, "list_adapters", "List fork-specific adapters and runtime compatibility evidence. Never infer a fork from mod ID alone.", false, false, "");
+        addTool(list, "list_recipe_maps", "List native registered recipe maps for an explicit adapter, including map rules and symbols.", false, true, "adapter,query");
+        addTool(list, "search_machine_recipes", "Search structured native recipes by map, item, fluid and direction (input/output/any). Preserves energy, time, chances, research, alternatives and special values. Dynamic recipes are not enumerated.", false, true, "adapter,map,item,nbt,fluid,direction,query");
+        addTool(list, "get_machine_recipe", "Read a recipe ID discovered by search_machine_recipes in this session. Rejects changed or removed recipes.", false, false, "adapter,recipeId");
+        addTool(list, "get_recipe_authoring_guide", "Read the bundled skill and GT Impact Kotlin API guide. AI writes code itself. Check runtimeAvailable before using the profile for the installed mod.", false, false, "adapter");
         return list;
     }
 
@@ -205,6 +211,14 @@ public final class StdioBridge {
         }
         if (!strings.isEmpty()) for (String key : strings.split(",")) properties.add(key, property("string"));
         if ("get_oredict".equals(name)) required.add(new JsonPrimitive("name"));
+        if (properties.has("adapter")) required.add(new JsonPrimitive("adapter"));
+        if ("get_machine_recipe".equals(name)) required.add(new JsonPrimitive("recipeId"));
+        if ("search_machine_recipes".equals(name)) {
+            properties.add("metadata", integer(0, 32767, 0));
+            properties.add("includeHidden", property("boolean"));
+            properties.add("includeFake", property("boolean"));
+            properties.add("includeDisabled", property("boolean"));
+        }
         schema.add("properties", properties);
         schema.add("required", required);
         tool.add("inputSchema", schema);

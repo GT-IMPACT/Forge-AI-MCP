@@ -21,6 +21,14 @@ object McpInstallation {
         val instructions = McpInstallation::class.java.getResourceAsStream("/assets/forgeaimcp/mcp/README.txt")
             ?: error("В моде отсутствует инструкция подключения.")
         writeIfChanged(File(directory, "README.txt"), instructions.use { it.readBytes() })
+        for (relative in listOf("skills/gt-impact-recipes/SKILL.md", "skills/gt-impact-recipes/references/authoring.md")) {
+            val resource = McpInstallation::class.java.getResourceAsStream("/assets/forgeaimcp/mcp/$relative")
+                ?: error("В моде отсутствует $relative")
+            val target = File(directory, relative)
+            Files.createDirectories(target.parentFile.toPath())
+            writeIfChanged(target, resource.use { it.readBytes() })
+        }
+
         val javaDirectory = File(System.getProperty("java.home"), "bin")
         val java = listOf(File(javaDirectory, "java.exe"), File(javaDirectory, "java"))
             .firstOrNull { it.isFile }?.canonicalFile
