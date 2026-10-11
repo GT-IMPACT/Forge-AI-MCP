@@ -17,7 +17,14 @@ fun main() {
             if(reply.has("error"))error(reply.get("error").asString)
             reply.getAsJsonObject("result")
         } } catch (_: java.io.IOException) { previewData(tool,args) }
-    }, { error("Icons are rendered by Minecraft, not by the development preview") }, { JsonObject().apply {addProperty("running",false);addProperty("total",0);addProperty("processed",0);addProperty("failed",0)} })
+    }, { args ->
+        // Use real client-rendered pixels while previewing bundled UI changes without restarting the game.
+        val params = listOf("item", "metadata", "nbt").filter { args.has(it) && !args.get(it).isJsonNull }
+            .joinToString("&") { it + "=" + java.net.URLEncoder.encode(args.get(it).asString, "UTF-8") }
+        val connection = java.net.URL("http://127.0.0.1:25577/api/icon?$params").openConnection()
+        connection.connectTimeout = 2000; connection.readTimeout = 25000
+        connection.getInputStream().use { it.readBytes() }
+    }, { JsonObject().apply {addProperty("running",false);addProperty("total",0);addProperty("processed",0);addProperty("failed",0)} })
     server.start()
     Runtime.getRuntime().addShutdownHook(Thread { server.stop() })
     println("Editor development preview: ${server.address()}")
