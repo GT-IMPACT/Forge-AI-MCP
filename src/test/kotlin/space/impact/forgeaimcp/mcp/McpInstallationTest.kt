@@ -20,6 +20,7 @@ class McpInstallationTest {
         assertTrue(jar.length() > 0)
         assertTrue(File(directory, "README.txt").readText().contains("/forgemcp start"))
         assertTrue(File(directory, "skills/gt-impact-recipes/SKILL.md").readText().contains("name: gt-impact-recipes"))
+        assertTrue(File(directory, "skills/minecraft-recipes/SKILL.md").readText().contains("name: minecraft-recipes"))
         assertTrue(File(directory, "skills/gt-impact-recipes/references/authoring.md").readText().contains("Kotlin"))
         val config = JsonParser().parse(File(directory, "mcp.json").readText()).asJsonObject
             .getAsJsonObject("mcpServers").getAsJsonObject("forgemcp")

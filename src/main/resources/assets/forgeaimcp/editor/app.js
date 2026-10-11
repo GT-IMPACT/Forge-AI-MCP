@@ -81,13 +81,17 @@ function dirty() {
   updateStatus();
 }
 function updateStatus() {
+  const vanilla = isVanillaKind();
   $("draft-state").textContent = state.dirty
     ? "Есть изменения"
     : state.draft.id
       ? "Сохранён"
       : "Новый черновик";
   $("draft-state").className = "badge" + (state.dirty ? " dirty" : "");
-  $("flow-time").textContent = `${state.draft.durationTicks / 20} с`;
+  $("flow-time").textContent =
+    state.draft.kind === "shaped" || state.draft.kind === "shapeless"
+      ? "Крафт"
+      : `${state.draft.durationTicks / 20} с`;
   $("duration-hint").textContent =
     `${state.draft.durationTicks / 20} секунд · ${state.draft.durationTicks} тиков`;
   $("energy-hint").textContent =
@@ -96,7 +100,54 @@ function updateStatus() {
   if (!state.draft.map) issues.push("Выберите карту рецептов");
   if (!state.draft.itemOutputs.length && !state.draft.fluidOutputs.length)
     issues.push("Добавьте хотя бы один выход");
-  if (!state.draft.durationTicks) issues.push("Укажите длительность");
+  if (!state.draft.durationTicks && !vanilla)
+    issues.push("Укажите длительность");
+  if (vanilla) {
+    if (state.draft.itemOutputs.length !== 1)
+      issues.push("Нужен один выходной предмет");
+    if (!state.draft.itemInputs.length)
+      issues.push("Добавьте входные предметы");
+    if (
+      state.draft.itemInputs.length > (state.draft.kind === "furnace" ? 1 : 9)
+    )
+      issues.push("Слишком много входных слотов");
+    if (
+      state.draft.fluidInputs.length ||
+      state.draft.fluidOutputs.length ||
+      state.draft.specialItems.length
+    )
+      issues.push("Этот API не поддерживает жидкости и специальный слот");
+    if (state.draft.itemInputs.some((s) => s.count !== 1))
+      issues.push("В каждой клетке расходуется один предмет");
+    if (state.draft.itemOutputs.some((s) => s.chance !== 10000))
+      issues.push("Выход всегда гарантирован: шанс 10000");
+    if (state.draft.itemInputs.some((s) => s.nbt))
+      issues.push("Стандартное совпадение входа не проверяет NBT");
+    if (
+      state.registration?.adapter === "gregtech-impact" &&
+      state.draft.kind === "furnace" &&
+      state.draft.experience > 0
+    )
+      issues.push(
+        "Печка GT Impact регистрируется с XP=0. Ненулевой опыт требует решения с ИИ.",
+      );
+    if (
+      state.draft.kind === "furnace" &&
+      state.draft.itemInputs.some((s) => s.oreDictionary || s.alternatives)
+    )
+      issues.push(
+        "OreDictionary и альтернативы печки требуют отдельных регистраций",
+      );
+    if (
+      state.draft.kind === "shaped" &&
+      state.draft.copiesInputNbt &&
+      (state.draft.grid?.mirrored === false ||
+        state.draft.itemInputs.some((s) => s.oreDictionary || s.alternatives))
+    )
+      issues.push(
+        "Копирование NBT — флаг Vanilla ShapedRecipes; Ore-рецептам нужен свой IRecipe",
+      );
+  }
   if (state.draft.kind === "assembly-line") {
     if (!state.draft.research?.item || !state.draft.research?.timeTicks)
       issues.push("Добавьте предмет и время исследования");
@@ -123,11 +174,23 @@ function updateStatus() {
           ),
         ]),
   );
+  if (vanilla && state.registration)
+    $("checks").append(
+      el(
+        "div",
+        {},
+        state.registration.adapter === "gregtech-impact"
+          ? "Регистрация через GT Impact · GT_ModHandler"
+          : state.registration.requiresVerifiedProfile
+            ? "Нужен проверенный API установленного форка GregTech"
+            : "Регистрация через Minecraft Forge",
+      ),
+    );
   $("ai-instruction").textContent = instruction();
 }
 function instruction() {
   return state.draft.id
-    ? `Прочитай get_recipe_draft с id="${state.draft.id}". Прочитай get_recipe_authoring_guide для ${state.draft.adapter}. Напиши Kotlin-код этого рецепта в проекте с учётом заметок и правил форка.`
+    ? `Прочитай get_recipe_draft с id="${state.draft.id}". Прочитай get_recipe_authoring_guide для ${state.draft.adapter}. ${isVanillaKind() ? "Проверь list_adapters.craftingRegistration: если установлен GregTech, используй проверенные методы его адаптера и прочитай его руководство. " : ""}Напиши Kotlin-код этого рецепта в проекте с учётом заметок и правил форка.`
     : "Сохраните черновик и попросите ИИ написать рецепт по его данным.";
 }
 function icon(data) {
@@ -181,6 +244,11 @@ function addStack(data, assignment = assignmentTarget(data)) {
   delete value.consumed;
   if (value.fluid) value.amount = value.amount || 1000;
   else value.count = value.count ?? 1;
+  if (
+    isVanillaKind() &&
+    (value.fluid || !["itemInputs", "itemOutputs"].includes(assignment.key))
+  )
+    return toast("Для этого рецепта доступны только предметы", true);
   if (assignment.alternative) {
     const slot = state.draft.itemInputs[assignment.index];
     if (!slot) return;
@@ -208,15 +276,24 @@ function addStack(data, assignment = assignmentTarget(data)) {
     if ((state.draft[assignment.key] || []).length >= 64)
       return toast("Максимум 64 слота", true);
     if (assignment.key === "itemOutputs") value.chance = value.chance || 10000;
-    state.draft[assignment.key].push(value);
+    if (assignment.key === "itemInputs" && state.draft.kind === "shaped") {
+      ensureGrid();
+      const cell = assignment.cell ?? state.draft.grid.cells.indexOf(null);
+      if (cell < 0) return toast("Сетка заполнена", true);
+      const index = state.draft.grid.cells[cell];
+      if (index === null) {
+        state.draft.grid.cells[cell] = state.draft.itemInputs.length;
+        state.draft.itemInputs.push(value);
+      } else state.draft.itemInputs[index] = value;
+    } else state.draft[assignment.key].push(value);
   }
   state.assignment = null;
   dirty();
   renderSlots();
   toast("Добавлено: " + itemName(value));
 }
-function chooseTarget(key) {
-  state.assignment = { key };
+function chooseTarget(key, cell) {
+  state.assignment = { key, cell };
   state.tab = key.startsWith("fluid") ? "fluids" : "items";
   document
     .querySelectorAll("[data-catalog]")
@@ -234,7 +311,13 @@ function chooseTarget(key) {
 }
 function slotNode(value, key, index) {
   const research = key === "research";
-  const node = el("div", { class: "slot" });
+  const node = el("div", {
+    class: "slot",
+    title:
+      itemName(value) +
+      " · " +
+      (value.item || value.oreDictionary || value.fluid),
+  });
   const name = el(
     "div",
     { class: "slot-name" },
@@ -249,7 +332,13 @@ function slotNode(value, key, index) {
   );
   const remove = () => {
     if (research) state.draft.research.item = null;
-    else state.draft[key].splice(index, 1);
+    else {
+      state.draft[key].splice(index, 1);
+      if (key === "itemInputs" && state.draft.kind === "shaped")
+        state.draft.grid.cells = state.draft.grid.cells.map((i) =>
+          i === index ? null : i > index ? i - 1 : i,
+        );
+    }
     dirty();
     renderSlots();
   };
@@ -290,7 +379,7 @@ function slotNode(value, key, index) {
     el("label", {}, value.fluid ? "mB" : "×", amount),
     el("button", { onclick: () => editStack(value, key, index) }, "Данные"),
   );
-  if (key === "itemOutputs") {
+  if (key === "itemOutputs" && !isVanillaKind()) {
     const chance = el("input", {
       type: "number",
       min: 1,
@@ -329,7 +418,62 @@ function slotNode(value, key, index) {
   node.append(options);
   return node;
 }
+function isVanillaKind() {
+  return ["shaped", "shapeless", "furnace"].includes(state.draft.kind);
+}
+function ensureGrid() {
+  if (!state.draft.grid)
+    state.draft.grid = {
+      width: 3,
+      height: 3,
+      mirrored: true,
+      cells: Array.from({ length: 9 }, (_, i) =>
+        i < state.draft.itemInputs.length ? i : null,
+      ),
+    };
+}
+function resizeGrid() {
+  ensureGrid();
+  const old = state.draft.grid;
+  const width = Number($("grid-width").value),
+    height = Number($("grid-height").value);
+  const cells = Array.from({ length: width * height }, (_, i) => {
+    const x = i % width,
+      y = Math.floor(i / width);
+    return x < old.width && y < old.height
+      ? old.cells[y * old.width + x]
+      : null;
+  });
+  const inputs = [];
+  state.draft.grid = {
+    ...old,
+    width,
+    height,
+    cells: cells.map((i) =>
+      i == null ? null : inputs.push(state.draft.itemInputs[i]) - 1,
+    ),
+  };
+  state.draft.itemInputs = inputs;
+  dirty();
+  renderSlots();
+}
 function renderSlots() {
+  const vanilla = isVanillaKind(),
+    shaped = state.draft.kind === "shaped";
+  $("grid-controls").hidden = !shaped;
+  $("experience-field").hidden = state.draft.kind !== "furnace";
+  $("experience").value = state.draft.experience ?? 0;
+  for (const id of ["eut", "special"]) $(id).closest("label").hidden = vanilla;
+  $("duration").closest("label").hidden = vanilla;
+  document.querySelector(".fluids-row").hidden = vanilla;
+  $("specialItems").closest("section").hidden = vanilla;
+  if (shaped) {
+    ensureGrid();
+    $("grid-width").value = state.draft.grid.width;
+    $("grid-height").value = state.draft.grid.height;
+    $("grid-mirrored").checked = state.draft.grid.mirrored !== false;
+    $("copy-nbt").checked = Boolean(state.draft.copiesInputNbt);
+  }
   for (const key of [
     "itemInputs",
     "itemOutputs",
@@ -338,6 +482,44 @@ function renderSlots() {
     "specialItems",
   ]) {
     const container = $(key);
+    container.classList.toggle("crafting-grid", key === "itemInputs" && shaped);
+    if (key === "itemInputs" && shaped) {
+      container.style.gridTemplateColumns = `repeat(${state.draft.grid.width}, minmax(0, 1fr))`;
+      container.replaceChildren(
+        ...state.draft.grid.cells.map((index, cell) => {
+          const node =
+            index === null
+              ? el(
+                  "button",
+                  {
+                    class: "slot-empty",
+                    onclick: () => chooseTarget(key, cell),
+                  },
+                  "＋",
+                )
+              : slotNode(state.draft.itemInputs[index], key, index);
+          node.addEventListener("dragover", (e) => e.preventDefault());
+          node.addEventListener("drop", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            container.classList.remove("drop-hover");
+            try {
+              addStack(
+                JSON.parse(
+                  e.dataTransfer.getData("application/x-forgemcp-stack"),
+                ),
+                { key, cell },
+              );
+            } catch {
+              toast("Не удалось прочитать предмет", true);
+            }
+          });
+          return node;
+        }),
+      );
+      continue;
+    }
+    container.style.gridTemplateColumns = "";
     container.replaceChildren(
       ...state.draft[key].map((value, index) => slotNode(value, key, index)),
     );
@@ -591,6 +773,11 @@ function replaceAllowed() {
   );
 }
 function loadRecipe(recipe) {
+  if (recipe.kind === "custom-crafting" || recipe.complete === false)
+    return toast(
+      "Правила этого рецепта декодированы не полностью. Откройте данные и исходный IRecipe для ИИ.",
+      true,
+    );
   const draft = emptyDraft();
   Object.assign(draft, {
     title: recipe.itemOutputs[0]?.name || "Импортированный рецепт",
@@ -602,6 +789,9 @@ function loadRecipe(recipe) {
     specialValue: recipe.special?.value || 0,
     sourceRecipeId: recipe.id,
     source: recipe,
+    grid: recipe.grid ? clone(recipe.grid) : undefined,
+    experience: recipe.experience ?? 0,
+    copiesInputNbt: recipe.copiesInputNbt || false,
   });
   for (const key of [
     "itemInputs",
@@ -658,7 +848,11 @@ async function loadMaps() {
     $("map").replaceChildren(
       el("option", { value: "" }, "Выберите машину…"),
       ...maps.map((map) =>
-        el("option", { value: map.id }, map.mNEIName || map.name || map.id),
+        el(
+          "option",
+          { value: map.id, disabled: map.authoringSupported === false },
+          map.mNEIName || map.name || map.id,
+        ),
       ),
     );
     if (state.draft.map && !maps.some((map) => map.id === state.draft.map))
@@ -891,11 +1085,38 @@ $("adapter").onchange = () => {
   renderSlots();
 };
 $("map").onchange = () => {
+  const previousKind = state.draft.kind;
   state.draft.map = $("map").value;
   state.draft.kind =
     state.maps.find((map) => map.id === state.draft.map)?.kind || "machine";
+  if (isVanillaKind()) {
+    state.draft.durationTicks = state.draft.kind === "furnace" ? 200 : 0;
+    state.draft.eut = 0;
+  }
+  if (state.draft.kind === "shaped") {
+    if (previousKind !== "shaped") delete state.draft.grid;
+    ensureGrid();
+  }
   dirty();
   renderSlots();
+};
+$("grid-width").onchange = resizeGrid;
+$("grid-height").onchange = resizeGrid;
+$("grid-mirrored").onchange = () => {
+  ensureGrid();
+  state.draft.grid.mirrored = $("grid-mirrored").checked;
+  dirty();
+};
+$("copy-nbt").onchange = () => {
+  state.draft.copiesInputNbt = $("copy-nbt").checked;
+  dirty();
+};
+$("experience").oninput = () => {
+  const xp = Number($("experience").value);
+  if (Number.isFinite(xp) && xp >= 0) {
+    state.draft.experience = xp;
+    dirty();
+  }
 };
 $("save").onclick = saveDraft;
 $("saved-drafts").onclick = openDrafts;
@@ -1003,6 +1224,7 @@ async function init() {
         : `${status.itemCount.toLocaleString("ru-RU")} предметов · игра подключена`,
     );
     const adapters = await query("list_adapters");
+    state.registration = adapters.craftingRegistration;
     state.adapters = adapters.results.filter((a) => a.available);
     $("adapter").replaceChildren(
       ...state.adapters.map((adapter) =>

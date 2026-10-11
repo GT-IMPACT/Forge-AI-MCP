@@ -1,11 +1,13 @@
 ---
 name: gt-impact-recipes
-description: Читать и писать рецепты GT Impact (GT-IMPACT/GT5.09OFFBEAT) на Kotlin с данными ForgeMCP. Использовать для машинных рецептов, Assembly Line, исследований, жидкостей и вероятностей именно этого форка GregTech.
+description: Читать и писать рецепты GT Impact (GT-IMPACT/GT5.09OFFBEAT) на Kotlin с данными ForgeMCP. Машины, Assembly Line, исследования, жидкости, а также регистрация верстака и печки через GT_ModHandler именно этого форка.
 ---
 
 # Рецепты GT Impact
 
 Пиши Kotlin-код самостоятельно под задачу пользователя. MCP возвращает данные и документацию; инструментов генерации или регистрации рецептов в игре нет.
+
+Если GT Impact установлен, рецепты верстака и печки регистрируй через `GT_ModHandler`, даже если их данные/черновик используют adapter `minecraft`. Проверь `list_adapters.craftingRegistration` и раздел верстака/печки в [references/authoring.md](references/authoring.md). Источник данных и владелец регистрации различаются. Не обходи GT прямой регистрацией Forge и не переноси методы на неизвестный форк.
 
 1. Вызови `list_adapters`. Для установленного мода используй `gregtech-impact` только при `available=true`. Один mod ID `gregtech` не определяет форк. Если профиль несовместим, выясни нужный форк вместо применения API Impact.
 2. Прочитай `get_recipe_authoring_guide` с `adapter="gregtech-impact"` и [references/authoring.md](references/authoring.md). Руководство доступно и без установленного GT, но `runtimeAvailable=false` означает, что игровые данные этого профиля недоступны.

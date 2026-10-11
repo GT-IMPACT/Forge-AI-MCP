@@ -30,7 +30,10 @@
         <div class="panel-heading">
           <span class="eyebrow">ИЗ ВАШЕЙ СБОРКИ</span>
           <h2>Каталог</h2>
-          <p>Клик — добавить, перетаскивание — выбрать слот. ПКМ — данные и рецепты.</p>
+          <p>
+            Клик — добавить, перетаскивание — выбрать слот. ПКМ — данные и
+            рецепты.
+          </p>
         </div>
         <div class="tabs" role="tablist" aria-label="Каталог">
           <button data-catalog="items" class="active" role="tab">
@@ -106,6 +109,32 @@
           >
         </div>
         <div class="canvas">
+          <div id="grid-controls" hidden>
+            <label
+              >Ширина
+              <select id="grid-width">
+                <option>1</option>
+                <option>2</option>
+                <option>3</option>
+              </select></label
+            >
+            <label
+              >Высота
+              <select id="grid-height">
+                <option>1</option>
+                <option>2</option>
+                <option>3</option>
+              </select></label
+            >
+            <label
+              ><input id="grid-mirrored" type="checkbox" checked /> Зеркальный
+              рецепт</label
+            >
+            <label
+              ><input id="copy-nbt" type="checkbox" /> Копировать NBT входа
+              (vanilla)</label
+            >
+          </div>
           <div class="flow-heading">
             <span>ИНГРЕДИЕНТЫ</span><span>РЕЗУЛЬТАТ</span>
           </div>
@@ -213,6 +242,14 @@
             обработки.</small
           ></label
         >
+        <label id="experience-field" class="field" hidden
+          >Опыт печки, XP<input
+            id="experience"
+            type="number"
+            min="0"
+            step="0.01"
+            value="0"
+        /></label>
         <div class="property-divider"></div>
         <label class="field"
           >Заметки для ИИ<textarea

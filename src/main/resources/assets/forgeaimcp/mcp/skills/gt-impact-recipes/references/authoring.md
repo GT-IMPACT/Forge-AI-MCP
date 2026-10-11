@@ -1,5 +1,25 @@
 # GT Impact: написание рецептов на Kotlin
 
+## Верстак и ванильная печка: регистрацией управляет GT
+
+При активном профиле Impact используй `gregtech.api.util.GT_ModHandler` для любых новых shaped/shapeless/furnace рецептов. Данные этих реестров читаются адаптером `minecraft`, но код регистрирует GT. Проверенные сигнатуры:
+
+```kotlin
+GT_ModHandler.addCraftingRecipe(output, bits, arrayOf<Any>("AB", " A", 'A', stackA, 'B', "ingotIron"))
+GT_ModHandler.addShapelessCraftingRecipe(output, bits, arrayOf<Any>(stackA, "ingotIron"))
+GT_ModHandler.addSmeltingRecipe(input, output)
+```
+
+Это `Object[]`, а не Java varargs: в Kotlin передавай `arrayOf<Any>(...)` без `*`. Возвращается boolean; false означает отказ. Результат может унифицироваться через GT OreDict, а буферизированные рецепты появляются после обработки буфера. Сохраняй структуру регистрации и фазу загрузки целевого проекта.
+
+`bits` — Long, символические значения `GT_ModHandler.RecipeBits`, объединение Kotlin `or`. `MIRRORED` включай по grid.mirrored; по умолчанию shaped-перегрузка без bits использует 0 и НЕ зеркалит. Для нового рецепта без запроса замены используй `DO_NOT_CHECK_FOR_COLLISIONS`, иначе shaped helper способен удалять совпадающие старые рецепты. `BUFFERED` согласуй с фазой загрузки. `NOT_REMOVABLE` запрещает удаления средствами GT, `DISMANTLEABLE` сохраняет компоненты, `REVERSIBLE` добавляет информацию о материалах; не добавляй их без требуемого поведения. `DELETE_ALL_OTHER_*` и `ONLY_ADD_IF_*` не являются безопасными флагами по умолчанию: у них есть удаления/условия.
+
+Строчные буквы в shaped-паттерне зарезервированы GT для инструментов: b blade, c crowbar, d screwdriver, f file, h hard hammer, i soldering iron, j soldering metal, k knife, m mortar, p drawplate, r soft hammer, s saw, w wrench, x wire cutter. Обычные ингредиенты обозначай заглавными буквами. Для инструмента сохрани его OreDictionary и поведение возврата/износа; count=0 машинного слота не выражает инструмент верстака.
+
+`KEEPNBT` в GT отличается от vanilla copiesInputNbt: требует одинаковых тегов всех непустых входов и копирует первый тег в результат. GT-рецепты также обрабатывают заряд, dismantling и enchantments. Не переносить vanilla-флаг на GT молча при изменении семантики. GT_Shaped_Recipe/GT_Shapeless_Recipe пока видны как custom IRecipe с частичными данными: для изменения существующего рецепта изучи их исходники.
+
+`addSmeltingRecipe(ItemStack, ItemStack)` регистрирует обычную печку с XP=0, проверяет GT-конфиг smelting, отвергает вход с container item и унифицирует выход. Перегрузки с experience НЕТ. Если черновик требует XP>0, объясни конфликт и согласуй изменение XP либо доработку API самого GT; не обнуляй опыт молча и не обходи helper вызовом GameRegistry. `addSmeltingAndAlloySmeltingRecipe` дополнительно затрагивает другие машины, поэтому не заменяет обычную печку без такого запроса. Длительность стандартной печки 200 тиков, EU/t и шанс этот API не задаёт.
+
 Профиль: [GT-IMPACT/GT5.09OFFBEAT](https://github.com/GT-IMPACT/GT5.09OFFBEAT), исходники `b8ab69ba9486e1b1f4913ca95dab1c64e4d07552`.
 Это опорная версия API, а не утверждение, что запущенный JAR собран из этого коммита.
 Основные источники: [GT_Recipe](https://github.com/GT-IMPACT/GT5.09OFFBEAT/blob/b8ab69ba9486e1b1f4913ca95dab1c64e4d07552/src/main/java/gregtech/api/util/GT_Recipe.java), [IGT_RecipeAdder](https://github.com/GT-IMPACT/GT5.09OFFBEAT/blob/b8ab69ba9486e1b1f4913ca95dab1c64e4d07552/src/main/java/gregtech/api/interfaces/internal/IGT_RecipeAdder.java), [GT_RecipeAdder](https://github.com/GT-IMPACT/GT5.09OFFBEAT/blob/b8ab69ba9486e1b1f4913ca95dab1c64e4d07552/src/main/java/gregtech/common/GT_RecipeAdder.java).

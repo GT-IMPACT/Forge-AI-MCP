@@ -255,6 +255,7 @@ class GtImpactAdapter : RecipeAdapter {
     }
 
     private fun guide(environment: ModEnvironment) = JsonObject().apply {
+        craftingRegistration(environment)?.let { add("craftingRegistration", it) }
         add("provenance", provenance(environment))
         addProperty("text", GtImpactAdapter::class.java.getResourceAsStream("/assets/forgeaimcp/mcp/skills/gt-impact-recipes/references/authoring.md")
             ?.use { it.reader(Charsets.UTF_8).readText() } ?: error("Missing bundled authoring guide"))
@@ -262,6 +263,26 @@ class GtImpactAdapter : RecipeAdapter {
         addProperty("doesNotApplyRecipes", true)
         addProperty("skill", GtImpactAdapter::class.java.getResourceAsStream("/assets/forgeaimcp/mcp/skills/gt-impact-recipes/SKILL.md")
             ?.use { it.reader(Charsets.UTF_8).readText() } ?: error("Missing bundled skill"))
+    }
+
+    override fun craftingRegistration(environment: ModEnvironment): JsonObject? {
+        if (!detect(environment).available) return null
+        val handler = environment.findClass("gregtech.api.util.GT_ModHandler") ?: return null
+        fun signature(name: String, vararg types: String) = handler.methods.any { method ->
+            method.name == name && java.lang.reflect.Modifier.isStatic(method.modifiers) && method.returnType == java.lang.Boolean.TYPE &&
+                method.parameterTypes.map { it.name } == types.toList()
+        }
+        if (!signature("addCraftingRecipe", "net.minecraft.item.ItemStack", "long", "[Ljava.lang.Object;") ||
+            !signature("addShapelessCraftingRecipe", "net.minecraft.item.ItemStack", "long", "[Ljava.lang.Object;") ||
+            !signature("addSmeltingRecipe", "net.minecraft.item.ItemStack", "net.minecraft.item.ItemStack")) return null
+        return JsonObject().apply {
+            addProperty("adapter", id)
+            addProperty("requiresVerifiedProfile", false)
+            addProperty("shaped", "GT_ModHandler.addCraftingRecipe(ItemStack, long, Object[])")
+            addProperty("shapeless", "GT_ModHandler.addShapelessCraftingRecipe(ItemStack, long, Object[])")
+            addProperty("furnace", "GT_ModHandler.addSmeltingRecipe(ItemStack, ItemStack)")
+            addProperty("instruction", "GT Impact owns crafting/smelting registration. Read get_recipe_authoring_guide(adapter=gregtech-impact) and use these methods instead of GameRegistry. Furnace helper uses XP=0; nonzero requested XP needs an explicit design decision, never silent loss or bypass.")
+        }
     }
 
     internal fun specialMeaning(map: String, value: Int): String = when (value) {

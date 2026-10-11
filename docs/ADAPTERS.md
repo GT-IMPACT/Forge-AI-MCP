@@ -1,5 +1,26 @@
 # Адаптеры рецептов
 
+## Реестры Minecraft и владелец регистрации
+
+`minecraft` читает CraftingManager/FurnaceRecipes всех модов. Карты: crafting-shaped,
+crafting-shapeless, furnace, crafting-custom. Поддержаны точные классы ShapedRecipes,
+ShapelessRecipes, ShapedOreRecipe, ShapelessOreRecipe; другие IRecipe/подклассы остаются
+частичными и не импортируются как обычный редактируемый рецепт. grid содержит width/height,
+cells (индексы itemInputs или null), mirrored. Повторный ингредиент — отдельный слот.
+Плавка содержит experience (текущее значение runtime lookup), стандартные 200 тиков;
+топливо и контейнеры не являются дополнительными выходами этой записи.
+
+`RecipeAdapter.craftingRegistration(environment)` позволяет проверенному форку владеть
+регистрацией этих рецептов. Контекст возвращается как list_adapters.craftingRegistration
+и registration в ответах адаптера minecraft. GT Impact проверяет наличие сигнатур
+GT_ModHandler shaped/shapeless/smelting и направляет ИИ к своему скиллу.
+Если GregTech установлен, но профиль неизвестен/неоднозначен, требует проверить API форка,
+не допускает молчаливого выбора GameRegistry. Это инструкции/данные для ИИ, без генератора кода.
+
+Черновики поддерживают kind shaped/shapeless/furnace, grid, copiesInputNbt и experience.
+Структурная проверка grid гарантирует размеры 1..3, пустые клетки и однозначное размещение
+каждого входного слота. Неполные черновики сохраняются; игровую логику проверяет ИИ по скиллу.
+
 `RecipeAdapter` — Kotlin-интерфейс: уникальный `id`, `detect(environment)` и `call(operation, arguments, environment, codec)`.
 `AdapterRegistry` хранит провайдеры, проверяет совместимость и направляет запрос только в явно выбранный адаптер. Внешний мод может зарегистрировать провайдер при init через `RecipeAdapters.register(provider)`.
 

@@ -22,6 +22,7 @@ object McpInstallation {
             ?: error("В моде отсутствует инструкция подключения.")
         writeIfChanged(File(directory, "README.txt"), instructions.use { it.readBytes() })
         val managed = mapOf(
+            "skills/minecraft-recipes/SKILL.md" to "/assets/forgeaimcp/mcp/skills/minecraft-recipes/SKILL.md",
             "skills/gt-impact-recipes/SKILL.md" to "/assets/forgeaimcp/mcp/skills/gt-impact-recipes/SKILL.md",
             "skills/gt-impact-recipes/references/authoring.md" to "/assets/forgeaimcp/mcp/skills/gt-impact-recipes/references/authoring.md",
             "editor/index.html" to "/assets/forgeaimcp/editor/index.html",

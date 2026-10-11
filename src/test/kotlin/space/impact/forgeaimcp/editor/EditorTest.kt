@@ -13,6 +13,26 @@ class EditorTest {
     @get:Rule val temporary = TemporaryFolder()
     private fun draft() = JsonParser().parse("""{"schemaVersion":1,"title":"Контроллер ME","adapter":"gregtech-impact","map":"sAssemblerRecipes","kind":"machine","durationTicks":600,"eut":1920,"specialValue":0,"itemInputs":[{"item":"gregtech:gt.metaitem.01","metadata":32767,"count":0,"nbt":"{test:1}","alternatives":[{"item":"test:alternative","count":2}]}],"itemOutputs":[{"item":"appliedenergistics2:tile.BlockController","count":1,"chance":2500}],"fluidInputs":[{"fluid":"oxygen","amount":144}],"fluidOutputs":[],"specialItems":[],"notes":"Напиши на Kotlin"}""").asJsonObject
 
+    @Test fun craftingGridAndFurnaceXpRoundTripAndInvalidGridIndicesFail() {
+        val store = DraftStore(temporary.newFolder())
+        val shaped = draft().apply {
+            addProperty("adapter", "minecraft"); addProperty("map", "crafting-shaped"); addProperty("kind", "shaped")
+            add("grid", JsonParser().parse("""{"width":2,"height":2,"cells":[null,0,null,null],"mirrored":false}"""))
+            addProperty("copiesInputNbt", true)
+        }
+        val saved = store.save(shaped)
+        assertEquals(shaped.get("grid"), store.load(saved.get("id").asString).get("grid"))
+        for (cells in listOf("[0,0,null,null]", "[null,2,null,null]", "[null,null,null,null]", "[0]")) {
+            shaped.getAsJsonObject("grid").add("cells",JsonParser().parse(cells))
+            try { store.save(shaped); fail() } catch (_: IllegalArgumentException) { }
+        }
+        val furnace = draft().apply { addProperty("adapter","minecraft");addProperty("kind","furnace");addProperty("map","furnace");addProperty("experience",.7) }
+        val smelted = store.save(furnace)
+        assertEquals(.7,store.load(smelted.get("id").asString).get("experience").asDouble,0.0)
+        furnace.addProperty("experience",-1)
+        try { store.save(furnace); fail() } catch (_: IllegalArgumentException) { }
+    }
+
     @Test fun draftRoundTripPreservesIdentityConditionsAndAlternativeSlots() {
         val store = DraftStore(temporary.newFolder())
         val saved = store.save(draft())

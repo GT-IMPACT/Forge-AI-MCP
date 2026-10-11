@@ -430,6 +430,46 @@ progress {
   outline-offset: 6px;
   border-radius: 8px;
 }
+.slot-group.crafting-grid {
+  display: grid;
+}
+.crafting-grid .slot {
+  min-width: 0;
+}
+.crafting-grid .slot-main {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  position: relative;
+}
+.crafting-grid .slot-name {
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.crafting-grid .slot-name small {
+  display: none;
+}
+.crafting-grid .slot-remove {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+.crafting-grid .slot-options {
+  flex-wrap: wrap;
+}
+#grid-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+#grid-controls label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
 .slot-empty {
   width: 100%;
   min-height: 86px;

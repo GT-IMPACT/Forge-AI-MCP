@@ -12,6 +12,14 @@ class ImpactMarker {
     companion object { @JvmField val MODID = "gregtech"; @JvmField val VERSION = "test-impact" }
 }
 
+class ImpactCraftingHandler {
+    companion object {
+        @JvmStatic fun addCraftingRecipe(output: ItemStack, bits: Long, recipe: Array<Any>) = true
+        @JvmStatic fun addShapelessCraftingRecipe(output: ItemStack, bits: Long, recipe: Array<Any>) = true
+        @JvmStatic fun addSmeltingRecipe(input: ItemStack, output: ItemStack) = true
+    }
+}
+
 class ImpactMap(@JvmField val mUnlocalizedName: String = "test") {
     @JvmField val mRecipeList = mutableListOf<ImpactRecipe>()
     @JvmField val mNEIName = "Test"
@@ -83,6 +91,7 @@ class GtImpactAdapterTest {
             GtImpactAdapter.RECIPE_CLASS -> if (incompatible) String::class.java else ImpactRecipe::class.java
             GtImpactAdapter.MAP_CLASS -> ImpactMap::class.java
             GtImpactAdapter.ASSEMBLY_CLASS -> ImpactAssembly::class.java
+            "gregtech.api.util.GT_ModHandler" -> ImpactCraftingHandler::class.java
             else -> null
         }
     }
@@ -103,6 +112,13 @@ class GtImpactAdapterTest {
         assertFalse(adapter.detect(Environment(marker = false)).available)
         assertFalse(adapter.detect(Environment(incompatible = true)).available)
         assertTrue(adapter.detect(Environment()).available)
+        assertEquals("gregtech-impact", adapter.craftingRegistration(Environment())!!.get("adapter").asString)
+        assertNull(adapter.craftingRegistration(Environment(marker = false)))
+        val missingHelper = object : ModEnvironment {
+            override fun mod(id: String) = Environment().mod(id)
+            override fun findClass(name: String) = if (name == "gregtech.api.util.GT_ModHandler") String::class.java else Environment().findClass(name)
+        }
+        assertNull(adapter.craftingRegistration(missingHelper))
     }
 
     @Test fun exportsNativeRecipeDetailsAndRejectsChangedRecipeIds() {

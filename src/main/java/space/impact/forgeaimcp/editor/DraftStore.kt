@@ -57,7 +57,29 @@ class DraftStore(private val directory: File) {
         require(JsonSupport.text(draft, "title").length in 1..200) { "Title must contain 1..200 characters" }
         require(JsonSupport.text(draft, "adapter").matches(Regex("[a-z0-9][a-z0-9-]*"))) { "Explicit adapter ID required" }
         require(JsonSupport.text(draft, "map").length <= 400) { "Map ID too long" }
-        require(JsonSupport.text(draft, "kind") in listOf("machine", "assembly-line")) { "Invalid recipe kind" }
+        val kind = JsonSupport.text(draft, "kind")
+        require(kind in listOf("machine", "assembly-line", "shaped", "shapeless", "furnace")) { "Invalid recipe kind" }
+        if (kind == "shaped") {
+            val grid = draft.getAsJsonObject("grid") ?: error("Shaped recipe needs a grid")
+            val width = JsonSupport.int(grid, "width"); val height = JsonSupport.int(grid, "height")
+            require(width in 1..3 && height in 1..3) { "Grid must fit 3x3" }
+            val cells = grid.getAsJsonArray("cells") ?: error("Grid cells required")
+            require(cells.size() == width * height) { "Grid size mismatch" }
+            val slots = JsonSupport.array(draft, "itemInputs").size()
+            val used = mutableSetOf<Int>()
+            for (cell in cells) if (!cell.isJsonNull) {
+                require(cell.isJsonPrimitive && cell.asJsonPrimitive.isNumber)
+                val index = cell.asBigDecimal.intValueExact()
+                require(index in 0 until slots && used.add(index)) { "Grid index invalid or repeated; each occupied cell needs its own input slot" }
+            }
+            require(used.size == slots) { "Every input must appear in grid" }
+            JsonSupport.bool(grid, "mirrored", true)
+        }
+        if (draft.has("experience")) {
+            val xp = draft.get("experience")
+            require(xp.isJsonPrimitive && xp.asJsonPrimitive.isNumber && xp.asDouble.isFinite() && xp.asDouble >= 0) { "Invalid furnace experience" }
+        }
+        if (draft.has("copiesInputNbt")) JsonSupport.bool(draft, "copiesInputNbt")
         for (key in listOf("durationTicks", "eut")) require(JsonSupport.int(draft, key) >= 0) { "$key must be nonnegative" }
         JsonSupport.int(draft, "specialValue")
         for (key in listOf("itemInputs", "itemOutputs", "fluidInputs", "fluidOutputs", "specialItems")) {

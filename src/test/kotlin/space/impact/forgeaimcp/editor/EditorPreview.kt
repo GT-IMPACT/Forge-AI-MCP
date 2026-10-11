@@ -33,8 +33,8 @@ private fun previewData(tool:String,args:JsonObject):JsonObject {
     }
     return when(tool) {
         "get_status"->json("""{"running":false,"worldLoaded":false,"itemsReady":true,"itemCount":7,"developmentPreview":true}""")
-        "list_adapters"->json("""{"results":[{"adapter":"gregtech-impact","available":true,"reason":"development fixture"}]}""")
-        "list_recipe_maps"->json("""{"results":[{"id":"sAssemblerRecipes","mNEIName":"Assembler","kind":"machine"},{"id":"assembly-line","name":"Assembly Line","kind":"assembly-line"}],"hasMore":false}""")
+        "list_adapters"->json("""{"results":[{"adapter":"gregtech-impact","available":true,"reason":"development fixture"},{"adapter":"minecraft","available":true,"reason":"development fixture"}]}""")
+        "list_recipe_maps"->if(args.get("adapter")?.asString=="minecraft") json("""{"results":[{"id":"crafting-shaped","name":"Верстак — shaped","kind":"shaped"},{"id":"crafting-shapeless","name":"Верстак — shapeless","kind":"shapeless"},{"id":"furnace","name":"Печка","kind":"furnace"}],"hasMore":false}""") else json("""{"results":[{"id":"sAssemblerRecipes","mNEIName":"Assembler","kind":"machine"},{"id":"assembly-line","name":"Assembly Line","kind":"assembly-line"}],"hasMore":false}""")
         "search_items"->page(items.filter{it.toString().contains(args.get("query")?.asString?:"",ignoreCase=true)})
         "search_fluids"->page(listOf(json("""{"fluid":"oxygen","name":"Oxygen Gas","amount":1000,"unit":"mB"}""")))
         "search_oredict"->page(listOf(json("""{"name":"circuitData","itemCount":4}""")))

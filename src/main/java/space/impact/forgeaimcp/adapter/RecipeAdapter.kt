@@ -7,6 +7,8 @@ interface RecipeAdapter {
     val id: String
     fun detect(environment: ModEnvironment): AdapterDetection
     fun call(operation: String, arguments: JsonObject, environment: ModEnvironment, codec: RecipeValueCodec): JsonObject
+    /** A verified fork can own registration of recipes read from the Minecraft registries. */
+    fun craftingRegistration(environment: ModEnvironment): JsonObject? = null
 }
 
 data class ModIdentity(val id: String, val version: String, val artifact: String?)
